@@ -1,4 +1,3 @@
-import { PagePropertyType } from '@affine/core/modules/properties/services/schema';
 import * as icons from '@blocksuite/icons/rc';
 import type { SVGProps } from 'react';
 
@@ -11,7 +10,7 @@ type fromLibIconName<T extends string> = T extends `${infer N}Icon`
   ? Uncapitalize<N>
   : never;
 
-export const iconNames = [
+export const docPropertyIconNames = [
   'ai',
   'email',
   'text',
@@ -92,11 +91,9 @@ export const iconNames = [
   'createdEdited',
 ] as const satisfies fromLibIconName<LibIconComponentName>[];
 
-export type PagePropertyIcon = (typeof iconNames)[number];
+export type DocPropertyIconName = (typeof docPropertyIconNames)[number];
 
-export const getDefaultIconName = (
-  type: PagePropertyType
-): PagePropertyIcon => {
+export const getDefaultIconName = (type: string): DocPropertyIconName => {
   switch (type) {
     case 'text':
       return 'text';
@@ -119,25 +116,25 @@ export const getDefaultIconName = (
   }
 };
 
-export const getSafeIconName = (
-  iconName: string,
-  type?: PagePropertyType
-): PagePropertyIcon => {
-  return iconNames.includes(iconName as any)
-    ? (iconName as PagePropertyIcon)
-    : getDefaultIconName(type || PagePropertyType.Text);
+const getSafeIconName = (
+  iconName?: string | null,
+  type?: string
+): DocPropertyIconName => {
+  return docPropertyIconNames.includes(iconName as any)
+    ? (iconName as DocPropertyIconName)
+    : getDefaultIconName(type || 'text');
 };
 
 const nameToComponentName = (
-  iconName: PagePropertyIcon
+  iconName: DocPropertyIconName
 ): LibIconComponentName => {
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   return `${capitalize(iconName)}Icon` as LibIconComponentName;
 };
 
-export const nameToIcon = (
-  iconName: string,
-  type?: PagePropertyType
+export const docPropertyIconNameToIcon = (
+  iconName?: string | null,
+  type?: string
 ): IconType => {
   const Icon = icons[nameToComponentName(getSafeIconName(iconName, type))];
   if (!Icon) {

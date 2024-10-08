@@ -6,7 +6,6 @@ import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type {
   PageInfoCustomProperty,
   PageInfoCustomPropertyMeta,
-  PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
 import { i18nTime, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -21,29 +20,20 @@ import {
   ToggleExpandIcon,
   ViewIcon,
 } from '@blocksuite/icons/rc';
-import type { DragEndEvent, DraggableAttributes } from '@dnd-kit/core';
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  restrictToParentElement,
-  restrictToVerticalAxis,
-} from '@dnd-kit/modifiers';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import {
+  type DocPropertyType,
   DocService,
+  DocsService,
   useLiveData,
+  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { use } from 'foxact/use';
 import { useDebouncedValue } from 'foxact/use-debounced-value';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import type React from 'react';
 import type {
   CSSProperties,
@@ -63,19 +53,14 @@ import {
 import { AffinePageReference } from '../reference-link';
 import { managerContext } from './common';
 import { ConfirmDeletePropertyModal } from './confirm-delete-property-modal';
-import type { PagePropertyIcon } from './icons-mapping';
-import { getDefaultIconName, nameToIcon } from './icons-mapping';
+import type { DocPropertyIconName } from './icons-mapping';
+import { docPropertyIconNameToIcon, getDefaultIconName } from './icons-mapping';
 import type { MenuItemOption } from './menu-items';
 import {
   EditPropertyNameMenuItem,
   PropertyTypeMenuItem,
   renderMenuItemOptions,
 } from './menu-items';
-import type { PagePropertiesMetaManager } from './page-properties-manager';
-import {
-  newPropertyTypes,
-  PagePropertiesManager,
-} from './page-properties-manager';
 import {
   propertyValueRenderers,
   TagsValue,
@@ -90,64 +75,6 @@ type PagePropertiesSettingsPopupProps = PropsWithChildren<{
 const Divider = () => <div className={styles.tableHeaderDivider} />;
 
 type PropertyVisibility = PageInfoCustomProperty['visibility'];
-
-const editingPropertyAtom = atom<string | null>(null);
-
-const modifiers = [restrictToParentElement, restrictToVerticalAxis];
-
-interface SortablePropertiesProps {
-  children: (properties: PageInfoCustomProperty[]) => React.ReactNode;
-}
-
-export const SortableProperties = ({ children }: SortablePropertiesProps) => {
-  const manager = useContext(managerContext);
-  const properties = useMemo(() => manager.sorter.getOrderedItems(), [manager]);
-  const editingItem = useAtomValue(editingPropertyAtom);
-  const draggable = !manager.readonly && !editingItem;
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
-  // use localProperties since changes applied to upstream may be delayed
-  // if we use that one, there will be weird behavior after reordering
-  const [localProperties, setLocalProperties] = useState(properties);
-
-  useEffect(() => {
-    setLocalProperties(properties);
-  }, [properties]);
-
-  const onDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      if (!draggable) {
-        return;
-      }
-      const { active, over } = event;
-      if (over) {
-        manager.sorter.move(active.id, over.id);
-      }
-      setLocalProperties(manager.sorter.getOrderedItems());
-    },
-    [manager, draggable]
-  );
-
-  const filteredProperties = useMemo(
-    () => localProperties.filter(p => manager.getCustomPropertyMeta(p.id)),
-    [localProperties, manager]
-  );
-
-  return (
-    <DndContext sensors={sensors} onDragEnd={onDragEnd} modifiers={modifiers}>
-      <SortableContext disabled={!draggable} items={properties}>
-        {children(filteredProperties)}
-      </SortableContext>
-    </DndContext>
-  );
-};
-
-type SyntheticListenerMap = ReturnType<typeof useSortable>['listeners'];
 
 const SortablePropertyRow = ({
   property,
@@ -331,7 +258,7 @@ export const PagePropertiesSettingsPopup = ({
           properties.map(property => {
             const meta = manager.getCustomPropertyMeta(property.id);
             assertExists(meta, 'meta should exist for property');
-            const Icon = nameToIcon(meta.icon, meta.type);
+            const Icon = docPropertyIconNameToIcon(meta.icon, meta.type);
             const name = meta.name;
             return (
               <SortablePropertyRow
@@ -478,7 +405,7 @@ export const PagePropertyRowNameMenu = ({
   }, [manager, property.id]);
 
   const handleIconChange = useCallback(
-    (icon: PagePropertyIcon) => {
+    (icon: DocPropertyIconName) => {
       setLocalPropertyMeta(prev => ({
         ...prev,
         icon,
@@ -609,10 +536,15 @@ export const PagePropertiesTableHeader = ({
     workspaceService.workspace.engine.doc.docState$(docService.doc.id)
   );
 
+  const { createDate, updatedDate } = useLiveData(
+    docService.doc.meta$.selector(m => ({
+      createDate: m.createDate,
+      updatedDate: m.updatedDate,
+    }))
+  );
+
   const timestampElement = useMemo(() => {
-    const localizedCreateTime = manager.createDate
-      ? i18nTime(manager.createDate)
-      : null;
+    const localizedCreateTime = createDate ? i18nTime(createDate) : null;
 
     const createTimeElement = (
       <div className={styles.tableHeaderTimestamp}>
@@ -628,9 +560,9 @@ export const PagePropertiesTableHeader = ({
             <div className={styles.tableHeaderTimestamp}>
               {t['Updated']()} {i18nTime(serverClock)}
             </div>
-            {manager.createDate && (
+            {createDate && (
               <div className={styles.tableHeaderTimestamp}>
-                {t['Created']()} {i18nTime(manager.createDate)}
+                {t['Created']()} {i18nTime(createDate)}
               </div>
             )}
           </>
@@ -655,23 +587,16 @@ export const PagePropertiesTableHeader = ({
           )}
         </div>
       </Tooltip>
-    ) : manager.updatedDate ? (
+    ) : updatedDate ? (
       <Tooltip side="right" content={createTimeElement}>
         <div className={styles.tableHeaderTimestamp}>
-          {t['Updated']()} {i18nTime(manager.updatedDate)}
+          {t['Updated']()} {i18nTime(updatedDate)}
         </div>
       </Tooltip>
     ) : (
       createTimeElement
     );
-  }, [
-    manager.createDate,
-    manager.updatedDate,
-    retrying,
-    serverClock,
-    syncing,
-    t,
-  ]);
+  }, [createDate, updatedDate, retrying, serverClock, syncing, t]);
 
   const dTimestampElement = useDebouncedValue(timestampElement, 500);
 
@@ -742,7 +667,7 @@ export const PagePropertyRow = ({
 
   assertExists(meta, 'meta should exist for property');
 
-  const Icon = nameToIcon(meta.icon, meta.type);
+  const Icon = docPropertyIconNameToIcon(meta.icon, meta.type);
   const name = meta.name;
   const ValueRenderer = propertyValueRenderers[meta.type];
   const [editingMeta, setEditingMeta] = useState(false);
@@ -865,16 +790,11 @@ export const PagePropertiesTableBody = ({
           ) : null
         }
       </SortableProperties>
-      {manager.readonly ? null : <PagePropertiesAddProperty />}
+      {manager.readonly ? null : <DocPropertiesAddProperty />}
       <Divider />
     </Collapsible.Content>
   );
 };
-
-interface PagePropertiesCreatePropertyMenuItemsProps {
-  onCreated?: (e: React.MouseEvent, id: string) => void;
-  metaManager: PagePropertiesMetaManager;
-}
 
 const findNextDefaultName = (name: string, allNames: string[]): string => {
   const nameExists = allNames.includes(name);
@@ -892,30 +812,29 @@ const findNextDefaultName = (name: string, allNames: string[]): string => {
   }
 };
 
-export const PagePropertiesCreatePropertyMenuItems = ({
-  onCreated,
-  metaManager,
-}: PagePropertiesCreatePropertyMenuItemsProps) => {
+export const DocPropertiesCreatePropertyMenuItems = () => {
   const t = useI18n();
+  const docsService = useService(DocsService);
+  const propertyList = docsService.propertyList;
+
   const onAddProperty = useCallback(
-    (
-      e: React.MouseEvent,
-      option: { type: PagePropertyType; name: string; icon: string }
-    ) => {
-      const schemaList = metaManager.getOrderedPropertiesSchema();
-      const nameExists = schemaList.some(meta => meta.name === option.name);
-      const allNames = schemaList.map(meta => meta.name);
+    (option: { type: DocPropertyType; name: string; icon: string }) => {
+      const properties = propertyList.properties$.value;
+      const nameExists = properties.some(meta => meta.name === option.name);
+      const allNames = properties
+        .map(meta => meta.name)
+        .filter((name): name is string => name !== null && name !== undefined);
       const name = nameExists
         ? findNextDefaultName(option.name, allNames)
         : option.name;
-      const { id } = metaManager.addPropertyMeta({
+      propertyList.createProperty({
         name,
-        icon: option.icon,
         type: option.type,
+        icon: option.icon,
+        index: propertyList.indexAt('before'),
       });
-      onCreated?.(e, id);
     },
-    [metaManager, onCreated]
+    [propertyList]
   );
 
   return useMemo(() => {
@@ -929,13 +848,13 @@ export const PagePropertiesCreatePropertyMenuItems = ({
     options.push(
       newPropertyTypes.map(type => {
         const iconName = getDefaultIconName(type);
-        const Icon = nameToIcon(iconName, type);
+        const Icon = docPropertyIconNameToIcon(iconName, type);
         const name = t[`com.affine.page-properties.property.${type}`]();
         return {
           icon: <Icon />,
           text: name,
-          onClick: (e: React.MouseEvent) => {
-            onAddProperty(e, {
+          onClick: () => {
+            onAddProperty({
               icon: iconName,
               name: name,
               type: type,
@@ -992,7 +911,7 @@ const PagePropertiesAddPropertyMenuItems = ({
       options.push('-');
       const nonRequiredMetaOptions: MenuItemOption = nonRequiredMetaList.map(
         meta => {
-          const Icon = nameToIcon(meta.icon, meta.type);
+          const Icon = docPropertyIconNameToIcon(meta.icon, meta.type);
           const name = meta.name;
           return {
             icon: <Icon />,
@@ -1017,7 +936,7 @@ const PagePropertiesAddPropertyMenuItems = ({
   return menuItems;
 };
 
-export const PagePropertiesAddProperty = () => {
+export const DocPropertiesAddProperty = () => {
   const t = useI18n();
   const [adding, setAdding] = useState(true);
   const manager = useContext(managerContext);
@@ -1035,7 +954,7 @@ export const PagePropertiesAddProperty = () => {
     const items = adding ? (
       <PagePropertiesAddPropertyMenuItems onCreateClicked={toggleAdding} />
     ) : (
-      <PagePropertiesCreatePropertyMenuItems
+      <DocPropertiesCreatePropertyMenuItems
         metaManager={manager.metaManager}
         onCreated={handleCreated}
       />
@@ -1067,10 +986,8 @@ export const PagePropertiesAddProperty = () => {
   );
 };
 
-const PagePropertiesTableInner = () => {
-  const manager = useContext(managerContext);
+const DocPropertiesTableInner = () => {
   const [expanded, setExpanded] = useState(false);
-  use(manager.workspace.docCollection.doc.whenSynced);
   return (
     <div className={styles.root}>
       <Collapsible.Root
@@ -1085,34 +1002,8 @@ const PagePropertiesTableInner = () => {
   );
 };
 
-export const usePagePropertiesManager = (docId: string) => {
-  // the workspace properties adapter adapter is reactive,
-  // which means it's reference will change when any of the properties change
-  // also it will trigger a re-render of the component
-  const adapter = useCurrentWorkspacePropertiesAdapter();
-  const manager = useMemo(() => {
-    return new PagePropertiesManager(adapter, docId);
-  }, [adapter, docId]);
-  return manager;
-};
-
 // this is the main component that renders the page properties table at the top of the page below
 // the page title
-export const PagePropertiesTable = ({ docId }: { docId: string }) => {
-  const manager = usePagePropertiesManager(docId);
-
-  // if the given page is not in the current workspace, then we don't render anything
-  // eg. when it is in history modal
-
-  if (!manager.page) {
-    return null;
-  }
-
-  return (
-    <managerContext.Provider value={manager}>
-      <Suspense>
-        <PagePropertiesTableInner />
-      </Suspense>
-    </managerContext.Provider>
-  );
+export const DocPropertiesTable = () => {
+  return <DocPropertiesTableInner />;
 };

@@ -3,20 +3,23 @@ import { useI18n } from '@affine/i18n';
 import { chunk } from 'lodash-es';
 import { useEffect, useRef } from 'react';
 
-import type { PagePropertyIcon } from './icons-mapping';
-import { iconNames, nameToIcon } from './icons-mapping';
+import type { DocPropertyIconName } from './icons-mapping';
+import {
+  docPropertyIconNames,
+  docPropertyIconNameToIcon,
+} from './icons-mapping';
 import * as styles from './icons-selector.css';
 
 const iconsPerRow = 6;
 
-const iconRows = chunk(iconNames, iconsPerRow);
+const iconRows = chunk(docPropertyIconNames, iconsPerRow);
 
 export const IconsSelectorPanel = ({
   selected,
   onSelectedChange,
 }: {
-  selected: PagePropertyIcon;
-  onSelectedChange: (icon: PagePropertyIcon) => void;
+  selected: DocPropertyIconName;
+  onSelectedChange: (icon: DocPropertyIconName) => void;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -44,7 +47,7 @@ export const IconsSelectorPanel = ({
             return (
               <div key={index} className={styles.iconsRow}>
                 {iconRow.map(iconName => {
-                  const Icon = nameToIcon(iconName);
+                  const Icon = docPropertyIconNameToIcon(iconName);
                   return (
                     <div
                       onClick={() => onSelectedChange(iconName)}
@@ -71,10 +74,10 @@ export const IconsSelectorButton = ({
   selected,
   onSelectedChange,
 }: {
-  selected: PagePropertyIcon;
-  onSelectedChange: (icon: PagePropertyIcon) => void;
+  selected: DocPropertyIconName;
+  onSelectedChange: (icon: DocPropertyIconName) => void;
 }) => {
-  const Icon = nameToIcon(selected);
+  const Icon = docPropertyIconNameToIcon(selected);
   return (
     <Menu
       items={

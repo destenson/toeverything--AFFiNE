@@ -29,7 +29,7 @@ import {
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
 import { managerContext } from '../common';
 import {
-  PagePropertiesAddProperty,
+  DocPropertiesAddProperty,
   PagePropertyRow,
   SortableProperties,
   usePagePropertiesManager,
@@ -191,7 +191,7 @@ export const InfoTable = ({
           ) : null
         }
       </SortableProperties>
-      {manager.readonly ? null : <PagePropertiesAddProperty />}
+      {manager.readonly ? null : <DocPropertiesAddProperty />}
     </div>
   );
 };

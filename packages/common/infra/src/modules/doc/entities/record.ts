@@ -31,8 +31,10 @@ export class DocRecord extends Entity<{ id: string }> {
     { id: this.id }
   );
 
-  setProperties(properties: Partial<DocProperties>): void {
-    this.docPropertiesStore.updateDocProperties(this.id, properties);
+  setCustomProperty(propertyId: string, value: string) {
+    this.docPropertiesStore.updateDocProperties(this.id, {
+      ['custom:' + propertyId]: value,
+    });
   }
 
   setMeta(meta: Partial<DocMeta>): void {

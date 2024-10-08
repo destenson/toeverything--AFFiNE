@@ -1,4 +1,5 @@
 export { Doc } from './entities/doc';
+export type { DocPropertyType } from './entities/property-list';
 export { DocRecord } from './entities/record';
 export { DocRecordList } from './entities/record-list';
 export { DocScope } from './scopes/doc';

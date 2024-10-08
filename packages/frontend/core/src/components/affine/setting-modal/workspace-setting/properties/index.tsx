@@ -3,13 +3,15 @@ import { SettingHeader } from '@affine/component/setting-components';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
 import { Trans, useI18n } from '@affine/i18n';
+import { DeleteIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import {
-  DeleteIcon,
-  FilterIcon,
-  MoreHorizontalIcon,
-} from '@blocksuite/icons/rc';
-import { FrameworkScope, type WorkspaceMetadata } from '@toeverything/infra';
-import type { MouseEvent } from 'react';
+  type DocCustomPropertyInfo,
+  DocsService,
+  FrameworkScope,
+  useLiveData,
+  useService,
+  type WorkspaceMetadata,
+} from '@toeverything/infra';
 import {
   createContext,
   Fragment,
@@ -20,36 +22,17 @@ import {
   useState,
 } from 'react';
 
-import { useCurrentWorkspacePropertiesAdapter } from '../../../../../components/hooks/use-affine-adapter';
 import { useWorkspace } from '../../../../../components/hooks/use-workspace';
-import type { PagePropertyIcon } from '../../../page-properties';
-import {
-  nameToIcon,
-  PagePropertiesCreatePropertyMenuItems,
-  PagePropertiesMetaManager,
-} from '../../../page-properties';
+import type { DocPropertyIconName } from '../../../page-properties';
+import { docPropertyIconNameToIcon } from '../../../page-properties';
 import { ConfirmDeletePropertyModal } from '../../../page-properties/confirm-delete-property-modal';
+import { CreatePropertyMenuItems } from '../../../page-properties/menu/create-doc-property';
 import type { MenuItemOption } from '../../../page-properties/menu-items';
-import {
-  EditPropertyNameMenuItem,
-  PropertyTypeMenuItem,
-  renderMenuItemOptions,
-} from '../../../page-properties/menu-items';
+import { renderMenuItemOptions } from '../../../page-properties/menu-items';
 import * as styles from './styles.css';
 
 // @ts-expect-error this should always be set
 const managerContext = createContext<PagePropertiesMetaManager>();
-
-const usePagePropertiesMetaManager = () => {
-  // the workspace properties adapter adapter is reactive,
-  // which means it's reference will change when any of the properties change
-  // also it will trigger a re-render of the component
-  const adapter = useCurrentWorkspacePropertiesAdapter();
-  const manager = useMemo(() => {
-    return new PagePropertiesMetaManager(adapter);
-  }, [adapter]);
-  return manager;
-};
 
 const Divider = () => {
   return <div className={styles.divider} />;
@@ -58,7 +41,7 @@ const Divider = () => {
 const EditPropertyButton = ({
   property,
 }: {
-  property: PageInfoCustomPropertyMeta;
+  property: DocCustomPropertyInfo;
 }) => {
   const t = useI18n();
   const manager = useContext(managerContext);
@@ -125,7 +108,7 @@ const EditPropertyButton = ({
     }));
   }, []);
   const handleIconChange = useCallback(
-    (icon: PagePropertyIcon) => {
+    (icon: DocPropertyIconName) => {
       setLocalPropertyMeta(prev => ({
         ...prev,
         icon,
@@ -196,13 +179,10 @@ const EditPropertyButton = ({
 
 const CustomPropertyRow = ({
   property,
-  relatedPages,
 }: {
-  relatedPages: string[];
-  property: PageInfoCustomPropertyMeta;
+  property: DocCustomPropertyInfo;
 }) => {
-  const Icon = nameToIcon(property.icon, property.type);
-  const required = property.required;
+  const Icon = docPropertyIconNameToIcon(property.icon, property.type);
   const t = useI18n();
   return (
     <div
@@ -214,49 +194,23 @@ const CustomPropertyRow = ({
       <div data-unnamed={!property.name} className={styles.propertyName}>
         {property.name || t['unnamed']()}
       </div>
-      {relatedPages.length > 0 ? (
-        <div className={styles.propertyDocCount}>
-          ·{' '}
-          <Trans
-            i18nKey={
-              relatedPages.length > 1
-                ? 'com.affine.settings.workspace.properties.doc_others'
-                : 'com.affine.settings.workspace.properties.doc'
-            }
-            count={relatedPages.length}
-          >
-            <span>{{ count: relatedPages.length } as any}</span> doc
-          </Trans>
-        </div>
-      ) : null}
       <div className={styles.spacer} />
-      {required ? (
-        <div className={styles.propertyRequired}>
-          {t['com.affine.page-properties.property.required']()}
-        </div>
-      ) : null}
       <EditPropertyButton property={property} />
     </div>
   );
 };
 
-const propertyFilterModes = ['all', 'in-use', 'unused'] as const;
-type PropertyFilterMode = (typeof propertyFilterModes)[number];
-
 const CustomPropertyRows = ({
   properties,
-  statistics,
 }: {
-  properties: PageInfoCustomPropertyMeta[];
-  statistics: Map<string, Set<string>>;
+  properties: DocCustomPropertyInfo[];
 }) => {
   return (
     <div className={styles.metaList}>
       {properties.map(property => {
-        const pages = [...(statistics.get(property.id) ?? [])];
         return (
           <Fragment key={property.id}>
-            <CustomPropertyRow property={property} relatedPages={pages} />
+            <CustomPropertyRow property={property} />
             <Divider />
           </Fragment>
         );
@@ -265,136 +219,34 @@ const CustomPropertyRows = ({
   );
 };
 
-const CustomPropertyRowsList = ({
-  filterMode,
-}: {
-  filterMode: PropertyFilterMode;
-}) => {
-  const manager = useContext(managerContext);
-  const properties = manager.getOrderedPropertiesSchema();
-  const statistics = manager.getPropertyStatistics();
+const CustomPropertyRowsList = () => {
+  const docsService = useService(DocsService);
+  const properties = useLiveData(docsService.propertyList.sortedProperties$);
   const t = useI18n();
 
-  if (filterMode !== 'all') {
-    const filtered = properties.filter(property => {
-      const count = statistics.get(property.id)?.size ?? 0;
-      return filterMode === 'in-use' ? count > 0 : count === 0;
-    });
-
-    return <CustomPropertyRows properties={filtered} statistics={statistics} />;
-  } else {
-    const partition = Object.groupBy(properties, p =>
-      p.required ? 'required' : p.readonly ? 'readonly' : 'optional'
-    );
-
-    return (
-      <>
-        {partition.required && partition.required.length > 0 ? (
-          <>
-            <div className={styles.subListHeader}>
-              {t[
-                'com.affine.settings.workspace.properties.required-properties'
-              ]()}
-            </div>
-            <CustomPropertyRows
-              properties={partition.required}
-              statistics={statistics}
-            />
-          </>
-        ) : null}
-
-        {partition.optional && partition.optional.length > 0 ? (
-          <>
-            <div className={styles.subListHeader}>
-              {t[
-                'com.affine.settings.workspace.properties.general-properties'
-              ]()}
-            </div>
-            <CustomPropertyRows
-              properties={partition.optional}
-              statistics={statistics}
-            />
-          </>
-        ) : null}
-
-        {partition.readonly && partition.readonly.length > 0 ? (
-          <>
-            <div className={styles.subListHeader}>
-              {t[
-                'com.affine.settings.workspace.properties.readonly-properties'
-              ]()}
-            </div>
-            <CustomPropertyRows
-              properties={partition.readonly}
-              statistics={statistics}
-            />
-          </>
-        ) : null}
-      </>
-    );
-  }
+  return (
+    <>
+      <div className={styles.subListHeader}>
+        {t['com.affine.settings.workspace.properties.header.title']()}
+      </div>
+      <CustomPropertyRows properties={properties} />
+    </>
+  );
 };
 
 const WorkspaceSettingPropertiesMain = () => {
   const t = useI18n();
-  const manager = useContext(managerContext);
-  const [filterMode, setFilterMode] = useState<PropertyFilterMode>('all');
-  const properties = manager.getOrderedPropertiesSchema();
-  const filterMenuItems = useMemo(() => {
-    const options: MenuItemOption[] = (
-      ['all', '-', 'in-use', 'unused'] as const
-    ).map(mode => {
-      return mode === '-'
-        ? '-'
-        : {
-            text: t[`com.affine.settings.workspace.properties.${mode}`](),
-            onClick: () => setFilterMode(mode),
-            checked: filterMode === mode,
-          };
-    });
-    return renderMenuItemOptions(options);
-  }, [filterMode, t]);
 
-  const onPropertyCreated = useCallback((_e: MouseEvent, id: string) => {
-    setTimeout(() => {
-      const newRow = document.querySelector<HTMLDivElement>(
-        `[data-testid="custom-property-row"][data-property-id="${id}"]`
-      );
-      if (newRow) {
-        newRow.scrollIntoView({ behavior: 'smooth' });
-        newRow.dataset.highlight = '';
-        setTimeout(() => {
-          delete newRow.dataset.highlight;
-        }, 3000);
-      }
-    });
-  }, []);
   return (
     <div className={styles.main}>
       <div className={styles.listHeader}>
-        {properties.length > 0 ? (
-          <Menu items={filterMenuItems}>
-            <Button prefix={<FilterIcon />}>
-              {filterMode === 'all'
-                ? t['com.affine.filter']()
-                : t[`com.affine.settings.workspace.properties.${filterMode}`]()}
-            </Button>
-          </Menu>
-        ) : null}
-        <Menu
-          items={
-            <PagePropertiesCreatePropertyMenuItems
-              onCreated={onPropertyCreated}
-              metaManager={manager}
-            />
-          }
-        >
+        <Menu items={<CreatePropertyMenuItems />}>
           <Button variant="primary">
             {t['com.affine.settings.workspace.properties.add_property']()}
           </Button>
         </Menu>
       </div>
-      <CustomPropertyRowsList filterMode={filterMode} />
+      <CustomPropertyRowsList />
     </div>
   );
 };

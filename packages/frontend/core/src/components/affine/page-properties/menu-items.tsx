@@ -5,14 +5,16 @@ import { useI18n } from '@affine/i18n';
 import type { KeyboardEventHandler, MouseEventHandler } from 'react';
 import { cloneElement, isValidElement, useCallback } from 'react';
 
-import type { PagePropertyIcon } from './icons-mapping';
-import {
-  getDefaultIconName,
-  getSafeIconName,
-  nameToIcon,
-} from './icons-mapping';
+import type { DocPropertyIconName } from './icons-mapping';
+import { docPropertyIconNameToIcon, getDefaultIconName } from './icons-mapping';
 import { IconsSelectorButton } from './icons-selector';
 import * as styles from './styles.css';
+import {
+  DocsService,
+  useService,
+  type DocPropertyType,
+} from '@toeverything/infra';
+
 export type MenuItemOption =
   | React.ReactElement
   | '-'
@@ -65,7 +67,7 @@ export const renderMenuItemOptions = (options: MenuItemOption[]) => {
   });
 };
 
-export const EditPropertyNameMenuItem = ({
+const EditPropertyNameMenuItem = ({
   property,
   onNameBlur: onBlur,
   onNameChange,
@@ -73,7 +75,7 @@ export const EditPropertyNameMenuItem = ({
 }: {
   onNameBlur: (e: string) => void;
   onNameChange: (e: string) => void;
-  onIconChange: (icon: PagePropertyIcon) => void;
+  onIconChange: (icon: DocPropertyIconName) => void;
   property: PageInfoCustomPropertyMeta;
 }) => {
   const iconName = getSafeIconName(property.icon, property.type);
@@ -114,12 +116,15 @@ export const EditPropertyNameMenuItem = ({
   );
 };
 
-export const PropertyTypeMenuItem = ({
+const PropertyTypeMenuItem = ({
   property,
 }: {
   property: PageInfoCustomPropertyMeta;
 }) => {
-  const Icon = nameToIcon(getDefaultIconName(property.type), property.type);
+  const Icon = docPropertyIconNameToIcon(
+    getDefaultIconName(property.type),
+    property.type
+  );
   const t = useI18n();
   return (
     <div className={styles.propertyRowTypeItem}>
@@ -130,4 +135,75 @@ export const PropertyTypeMenuItem = ({
       </div>
     </div>
   );
+};
+
+const findNextDefaultName = (name: string, allNames: string[]): string => {
+  const nameExists = allNames.includes(name);
+  if (nameExists) {
+    const match = name.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const nextName = name.replace(/(\d+)$/, `${num + 1}`);
+      return findNextDefaultName(nextName, allNames);
+    } else {
+      return findNextDefaultName(`${name} 2`, allNames);
+    }
+  } else {
+    return name;
+  }
+};
+
+export const DocPropertiesCreatePropertyMenuItems = () => {
+  const t = useI18n();
+  const docsService = useService(DocsService);
+  const propertyList = docsService.propertyList;
+
+  const onAddProperty = useCallback(
+    (option: { type: DocPropertyType; name: string; icon: string }) => {
+      const properties = propertyList.properties$.value;
+      const nameExists = properties.some(meta => meta.name === option.name);
+      const allNames = properties
+        .map(meta => meta.name)
+        .filter((name): name is string => name !== null && name !== undefined);
+      const name = nameExists
+        ? findNextDefaultName(option.name, allNames)
+        : option.name;
+      propertyList.createProperty({
+        name,
+        type: option.type,
+        icon: option.icon,
+        index: propertyList.indexAt('before'),
+      });
+    },
+    [propertyList]
+  );
+
+  return useMemo(() => {
+    const options: MenuItemOption[] = [];
+    options.push(
+      <div role="heading" className={styles.menuHeader}>
+        {t['com.affine.page-properties.create-property.menu.header']()}
+      </div>
+    );
+    options.push('-');
+    options.push(
+      newPropertyTypes.map(type => {
+        const iconName = getDefaultIconName(type);
+        const Icon = docPropertyIconNameToIcon(iconName, type);
+        const name = t[`com.affine.page-properties.property.${type}`]();
+        return {
+          icon: <Icon />,
+          text: name,
+          onClick: () => {
+            onAddProperty({
+              icon: iconName,
+              name: name,
+              type: type,
+            });
+          },
+        };
+      })
+    );
+    return renderMenuItemOptions(options);
+  }, [onAddProperty, t]);
 };

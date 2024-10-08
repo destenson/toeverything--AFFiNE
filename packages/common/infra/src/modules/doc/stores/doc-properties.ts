@@ -23,6 +23,7 @@ type LegacyDocPropertyInfo = {
   id?: string;
   name?: string;
   type?: string;
+  icon?: string;
 };
 
 type LegacyDocPropertyInfoList = Record<
@@ -54,7 +55,7 @@ export class DocPropertiesStore extends Store {
     return [...db, ...notOverridden].filter(i => !i.isDeleted);
   }
 
-  createDocPropertyInfo(config: DocCustomPropertyInfo) {
+  createDocPropertyInfo(config: Omit<DocCustomPropertyInfo, 'id'>) {
     return this.dbService.db.docCustomPropertyInfo.create(config).id;
   }
 
@@ -162,6 +163,7 @@ export class DocPropertiesStore extends Store {
           id,
           name: info.name,
           type: info.type,
+          icon: info.icon,
         });
       }
     }
