@@ -137,22 +137,6 @@ const PropertyTypeMenuItem = ({
   );
 };
 
-const findNextDefaultName = (name: string, allNames: string[]): string => {
-  const nameExists = allNames.includes(name);
-  if (nameExists) {
-    const match = name.match(/(\d+)$/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      const nextName = name.replace(/(\d+)$/, `${num + 1}`);
-      return findNextDefaultName(nextName, allNames);
-    } else {
-      return findNextDefaultName(`${name} 2`, allNames);
-    }
-  } else {
-    return name;
-  }
-};
-
 export const DocPropertiesCreatePropertyMenuItems = () => {
   const t = useI18n();
   const docsService = useService(DocsService);

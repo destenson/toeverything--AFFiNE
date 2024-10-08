@@ -44,7 +44,6 @@ const EditPropertyButton = ({
   property: DocCustomPropertyInfo;
 }) => {
   const t = useI18n();
-  const manager = useContext(managerContext);
   const [localPropertyMeta, setLocalPropertyMeta] = useState(() => ({
     ...property,
   }));
