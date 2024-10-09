@@ -28,6 +28,8 @@ test('pdf viewer', async () => {
   assert(page);
   expect(page.text().length).gt(0);
 
+  expect(page.isPortrait()).toBe(true);
+
   const rect = page.rect();
   const width = rect.width();
   const height = rect.height();
@@ -47,5 +49,14 @@ test('pdf viewer', async () => {
 
   const page2 = pages2.get(0);
   assert(page2);
-  console.log(page2.text());
+
+  const imageData = page2.renderWithScale(2);
+  assert(imageData);
+
+  const image2 = await Jimp.read(
+    fileURLToPath(new URL('./fixtures/minimal@2x.png', import.meta.url))
+  );
+  expect(imageData.data.buffer.byteLength).toBe(image2.bitmap.data.byteLength);
+  expect(imageData.width).toBeCloseTo(width * 2, 0.1);
+  expect(imageData.height).toBeCloseTo(height * 2, 0.1);
 });

@@ -362,8 +362,11 @@ if (!nativeBinding) {
 }
 
 module.exports.Document = nativeBinding.Document;
+module.exports.ImageData = nativeBinding.ImageData;
 module.exports.Page = nativeBinding.Page;
 module.exports.Pages = nativeBinding.Pages;
+module.exports.PageSize = nativeBinding.PageSize;
 module.exports.Rect = nativeBinding.Rect;
 module.exports.Viewer = nativeBinding.Viewer;
+module.exports.Orientation = nativeBinding.Orientation;
 module.exports.Rotation = nativeBinding.Rotation;

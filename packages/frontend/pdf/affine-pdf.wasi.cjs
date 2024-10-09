@@ -93,21 +93,28 @@ const {
 });
 
 function __napi_rs_initialize_modules(__napiInstance) {
-  __napiInstance.exports['__napi_register__Rotation_0']?.();
-  __napiInstance.exports['__napi_register__Document_struct_1']?.();
-  __napiInstance.exports['__napi_register__Document_impl_3']?.();
-  __napiInstance.exports['__napi_register__Page_struct_4']?.();
-  __napiInstance.exports['__napi_register__Page_impl_9']?.();
-  __napiInstance.exports['__napi_register__Pages_struct_10']?.();
-  __napiInstance.exports['__napi_register__Pages_impl_13']?.();
-  __napiInstance.exports['__napi_register__Viewer_struct_14']?.();
-  __napiInstance.exports['__napi_register__Viewer_impl_20']?.();
-  __napiInstance.exports['__napi_register__Rect_struct_21']?.();
-  __napiInstance.exports['__napi_register__Rect_impl_28']?.();
+  __napiInstance.exports['__napi_register__Document_struct_0']?.();
+  __napiInstance.exports['__napi_register__Document_impl_2']?.();
+  __napiInstance.exports['__napi_register__Page_struct_3']?.();
+  __napiInstance.exports['__napi_register__Page_impl_13']?.();
+  __napiInstance.exports['__napi_register__Pages_struct_14']?.();
+  __napiInstance.exports['__napi_register__Pages_impl_17']?.();
+  __napiInstance.exports['__napi_register__Rotation_18']?.();
+  __napiInstance.exports['__napi_register__Orientation_19']?.();
+  __napiInstance.exports['__napi_register__PageSize_struct_20']?.();
+  __napiInstance.exports['__napi_register__PageSize_impl_22']?.();
+  __napiInstance.exports['__napi_register__ImageData_struct_23']?.();
+  __napiInstance.exports['__napi_register__Viewer_struct_24']?.();
+  __napiInstance.exports['__napi_register__Viewer_impl_30']?.();
+  __napiInstance.exports['__napi_register__Rect_struct_31']?.();
+  __napiInstance.exports['__napi_register__Rect_impl_38']?.();
 }
 module.exports.Document = __napiModule.exports.Document;
+module.exports.ImageData = __napiModule.exports.ImageData;
 module.exports.Page = __napiModule.exports.Page;
 module.exports.Pages = __napiModule.exports.Pages;
+module.exports.PageSize = __napiModule.exports.PageSize;
 module.exports.Rect = __napiModule.exports.Rect;
 module.exports.Viewer = __napiModule.exports.Viewer;
+module.exports.Orientation = __napiModule.exports.Orientation;
 module.exports.Rotation = __napiModule.exports.Rotation;

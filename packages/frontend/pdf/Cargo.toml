@@ -7,7 +7,8 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-pdfium-render = { path = "../../../../pdfium-render" }
+# pdfium-render = "0.8" 
+pdfium-render = { git = "https://github.com/fundon/pdfium-render", branch = "msrv-1.63" }
 chrono        = { workspace = true }
 anyhow        = { workspace = true }
 napi          = { workspace = true }

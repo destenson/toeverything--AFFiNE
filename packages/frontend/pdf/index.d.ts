@@ -4,9 +4,21 @@ export declare class Document {
   pages(): Pages;
 }
 
+export declare class ImageData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
 export declare class Page {
   text(): string;
   rect(): Rect;
+  paperSize(): PageSize;
+  layout(): Orientation;
+  /** Returns `true` if this [Page] has orientation [Orientation::Portrait]. */
+  isPortrait(): boolean;
+  /** Returns `true` if this [Page] has orientation [Orientation::Landscape]. */
+  isLandscape(): boolean;
   renderAsBytes(
     width: number,
     height: number,
@@ -17,11 +29,16 @@ export declare class Page {
     height: number,
     rotation?: Rotation | undefined | null
   ): Uint8ClampedArray | null;
+  renderWithScale(scale: number): ImageData | null;
 }
 
 export declare class Pages {
   len(): number;
   get(index: number): Page | null;
+}
+
+export declare class PageSize {
+  layout(): Orientation;
 }
 
 export declare class Rect {
@@ -43,6 +60,12 @@ export declare class Viewer {
     password?: string | undefined | null
   ): Document | null;
   close(id: string): boolean;
+}
+
+export declare const enum Orientation {
+  Portrait = 0,
+  Landscape = 1,
+  Custom = 2,
 }
 
 export declare const enum Rotation {
