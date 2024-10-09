@@ -1,5 +1,6 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 import { rowHPadding } from '../styles.css';
 
@@ -52,4 +53,25 @@ export const hiddenInput = style({
 export const timeRow = style({
   marginTop: 20,
   borderBottom: 4,
+});
+export const addPropertyButton = style({
+  alignSelf: 'flex-start',
+  fontSize: cssVar('fontSm'),
+  color: `${cssVarV2('text/secondary')}`,
+  padding: '0 4px',
+  height: 36,
+  fontWeight: 400,
+  gap: 6,
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
+});
+globalStyle(`${addPropertyButton} svg`, {
+  fontSize: 16,
+  color: cssVarV2('icon/secondary'),
+});
+globalStyle(`${addPropertyButton}:hover svg`, {
+  color: cssVarV2('icon/primary'),
 });

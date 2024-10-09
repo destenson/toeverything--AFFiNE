@@ -143,7 +143,7 @@ export const left = style({
 
 export const edgeLine = style({
   vars: {
-    [terminalSize]: '8px',
+    [terminalSize]: '6px',
   },
   display: 'block',
   position: 'absolute',
@@ -156,8 +156,8 @@ export const edgeLine = style({
   // Terminal
   '::before': {
     content: '""',
-    width: terminalSize,
-    height: terminalSize,
+    width: 0,
+    height: 0,
     boxSizing: 'border-box',
     position: 'absolute',
     border: `${terminalSize} solid ${cssVar('--affine-primary-color')}`,

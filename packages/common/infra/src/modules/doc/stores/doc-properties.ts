@@ -96,7 +96,7 @@ export class DocPropertiesStore extends Store {
       this.watchLegacyDocPropertyInfoList().pipe(
         map(this.upgradeLegacyDocPropertyInfoList)
       ),
-      this.dbService.db.docCustomPropertyInfo.find$({}),
+      this.dbService.db.docCustomPropertyInfo.find$(),
     ]).pipe(
       map(([legacy, db]) => {
         const notOverridden = differenceBy(legacy, db, i => i.id);

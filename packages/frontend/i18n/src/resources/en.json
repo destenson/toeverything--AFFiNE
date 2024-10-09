@@ -1098,7 +1098,7 @@
   "com.affine.settings.workspace.properties.add_property": "Add property",
   "com.affine.settings.workspace.properties.all": "All",
   "com.affine.settings.workspace.properties.delete-property": "Delete property",
-  "com.affine.settings.workspace.properties.delete-property-prompt": "The \"<1>{{ name }}</1>\" property will be remove from {{ count }} doc(s). This action cannot be undone.",
+  "com.affine.settings.workspace.properties.delete-property-desc": "The \"<1>{{ name }}</1>\" property will be removed. This action cannot be undone.",
   "com.affine.settings.workspace.properties.doc": "<0>{{count}}</0> doc",
   "com.affine.settings.workspace.properties.doc_others": "<0>{{count}}</0> docs",
   "com.affine.settings.workspace.properties.edit-property": "Edit property",

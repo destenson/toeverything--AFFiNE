@@ -4,16 +4,6 @@ import { generateFractionalIndexingKeyBetween } from '../../../utils';
 import type { DocCustomPropertyInfo } from '../../db/schema/schema';
 import type { DocPropertiesStore } from '../stores/doc-properties';
 
-export type DocPropertyType =
-  | 'text'
-  | 'number'
-  | 'date'
-  | 'progress'
-  | 'checkbox'
-  | 'tags'
-  | 'createdBy'
-  | 'updatedBy';
-
 export class DocPropertyList extends Entity {
   constructor(private readonly docPropertiesStore: DocPropertiesStore) {
     super();
@@ -28,6 +18,10 @@ export class DocPropertyList extends Entity {
     // default index key is '', so always before any others
     list.sort((a, b) => ((a.index ?? '') > (b.index ?? '') ? 1 : -1))
   );
+
+  propertyInfo$(id: string) {
+    return this.properties$.map(list => list.find(info => info.id === id));
+  }
 
   updatePropertyInfo(id: string, properties: Partial<DocCustomPropertyInfo>) {
     this.docPropertiesStore.updateDocPropertyInfo(id, properties);

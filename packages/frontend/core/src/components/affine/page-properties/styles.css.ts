@@ -419,23 +419,6 @@ export const menuHeader = style({
   textTransform: 'uppercase',
 });
 
-export const menuItemListScrollable = style({});
-
-export const menuItemListScrollbar = style({
-  transform: 'translateX(4px)',
-});
-
-export const menuItemList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  maxHeight: 200,
-  overflow: 'auto',
-});
-
-globalStyle(`${menuItemList}[data-radix-scroll-area-viewport] > div`, {
-  display: 'table !important',
-});
-
 export const menuItemIconContainer = style({
   display: 'flex',
   alignItems: 'center',

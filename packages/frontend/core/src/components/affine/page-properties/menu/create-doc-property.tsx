@@ -1,26 +1,10 @@
 import { MenuItem, MenuSeparator } from '@affine/component';
 import { useI18n } from '@affine/i18n';
-import {
-  type DocPropertyType,
-  DocsService,
-  useService,
-} from '@toeverything/infra';
+import { DocsService, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import {
-  docPropertyIconNameToIcon,
-  getDefaultIconName,
-} from '../icons-mapping';
+import { type DocPropertyType, DocPropertyTypes } from '../types/constant';
 import * as styles from './create-doc-property.css';
-
-export const newPropertyTypes: DocPropertyType[] = [
-  'text',
-  'number',
-  'checkbox',
-  'date',
-  'createdBy',
-  'updatedBy',
-];
 
 const findNextDefaultName = (name: string, allNames: string[]): string => {
   const nameExists = allNames.includes(name);
@@ -44,7 +28,7 @@ export const CreatePropertyMenuItems = () => {
   const propertyList = docsService.propertyList;
 
   const onAddProperty = useCallback(
-    (option: { type: DocPropertyType; name: string; icon: string }) => {
+    (option: { type: DocPropertyType; name: string }) => {
       const properties = propertyList.properties$.value;
       const nameExists = properties.some(meta => meta.name === option.name);
       const allNames = properties
@@ -56,7 +40,6 @@ export const CreatePropertyMenuItems = () => {
       propertyList.createProperty({
         name,
         type: option.type,
-        icon: option.icon,
         index: propertyList.indexAt('before'),
       });
     },
@@ -69,19 +52,18 @@ export const CreatePropertyMenuItems = () => {
         {t['com.affine.page-properties.create-property.menu.header']()}
       </div>
       <MenuSeparator />
-      {newPropertyTypes.map(type => {
-        const iconName = getDefaultIconName(type);
-        const Icon = docPropertyIconNameToIcon(iconName, type);
-        const name = t[`com.affine.page-properties.property.${type}`]();
+      {Object.entries(DocPropertyTypes).map(([type, info]) => {
+        const name =
+          t[`com.affine.page-properties.property.${type as DocPropertyType}`]();
+        const Icon = info.icon;
         return (
           <MenuItem
             key={type}
             prefixIcon={<Icon />}
             onClick={() => {
               onAddProperty({
-                icon: iconName,
                 name: name,
-                type: type,
+                type: type as DocPropertyType,
               });
             }}
           >
