@@ -39,10 +39,10 @@ impl From<PdfPageOrientation> for Orientation {
 }
 
 #[napi]
-pub struct PageSize(PdfPagePaperSize);
+pub struct PagerSize(PdfPagePaperSize);
 
 #[napi]
-impl PageSize {
+impl PagerSize {
   #[napi]
   pub fn layout(&self) -> Orientation {
     match self.0 {
@@ -53,7 +53,7 @@ impl PageSize {
   }
 }
 
-impl From<PdfPagePaperSize> for PageSize {
+impl From<PdfPagePaperSize> for PagerSize {
   fn from(value: PdfPagePaperSize) -> Self {
     Self(value)
   }

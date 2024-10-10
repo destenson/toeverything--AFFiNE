@@ -17,7 +17,7 @@ export declare class ImageData {
 export declare class Page {
   text(): string;
   rect(): Rect;
-  paperSize(): PageSize;
+  paperSize(): PagerSize;
   layout(): Orientation;
   /** Returns `true` if this [Page] has orientation [Orientation::Portrait]. */
   isPortrait(): boolean;
@@ -36,13 +36,13 @@ export declare class Page {
   renderWithScale(scale: number): ImageData | null;
 }
 
+export declare class PagerSize {
+  layout(): Orientation;
+}
+
 export declare class Pages {
   len(): number;
   get(index: number): Page | null;
-}
-
-export declare class PageSize {
-  layout(): Orientation;
 }
 
 export declare class Rect {

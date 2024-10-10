@@ -61,8 +61,8 @@ function __napi_rs_initialize_modules(__napiInstance) {
   __napiInstance.exports['__napi_register__Pages_impl_21']?.();
   __napiInstance.exports['__napi_register__Rotation_22']?.();
   __napiInstance.exports['__napi_register__Orientation_23']?.();
-  __napiInstance.exports['__napi_register__PageSize_struct_24']?.();
-  __napiInstance.exports['__napi_register__PageSize_impl_26']?.();
+  __napiInstance.exports['__napi_register__PagerSize_struct_24']?.();
+  __napiInstance.exports['__napi_register__PagerSize_impl_26']?.();
   __napiInstance.exports['__napi_register__ImageData_struct_27']?.();
   __napiInstance.exports['__napi_register__Viewer_struct_28']?.();
   __napiInstance.exports['__napi_register__Viewer_impl_34']?.();
@@ -72,8 +72,8 @@ function __napi_rs_initialize_modules(__napiInstance) {
 export const Document = __napiModule.exports.Document;
 export const ImageData = __napiModule.exports.ImageData;
 export const Page = __napiModule.exports.Page;
+export const PagerSize = __napiModule.exports.PagerSize;
 export const Pages = __napiModule.exports.Pages;
-export const PageSize = __napiModule.exports.PageSize;
 export const Rect = __napiModule.exports.Rect;
 export const Viewer = __napiModule.exports.Viewer;
 export const Orientation = __napiModule.exports.Orientation;

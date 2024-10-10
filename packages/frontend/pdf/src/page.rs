@@ -2,7 +2,7 @@ use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use pdfium_render::prelude::{PdfPage, PdfRenderConfig};
 
-use crate::{ImageData, Orientation, PageSize, Pages, Rect, Rotation};
+use crate::{ImageData, Orientation, PagerSize, Pages, Rect, Rotation};
 
 #[napi]
 pub struct Page {
@@ -30,7 +30,7 @@ impl Page {
   }
 
   #[napi]
-  pub fn paper_size(&self) -> PageSize {
+  pub fn paper_size(&self) -> PagerSize {
     self.inner.paper_size().into()
   }
 
