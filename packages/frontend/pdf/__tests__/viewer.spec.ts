@@ -56,7 +56,16 @@ test('pdf viewer', async () => {
   const image2 = await Jimp.read(
     fileURLToPath(new URL('./fixtures/minimal@2x.png', import.meta.url))
   );
+
+  expect(imageData.data.buffer.slice(0, 100)).toStrictEqual(
+    image2.bitmap.data.buffer.slice(0, 100)
+  );
   expect(imageData.data.buffer.byteLength).toBe(image2.bitmap.data.byteLength);
+  expect(
+    imageData.data.buffer.slice(imageData.data.buffer.byteLength - 100)
+  ).toStrictEqual(
+    image2.bitmap.data.buffer.slice(imageData.data.buffer.byteLength - 100)
+  );
   expect(imageData.width).toBeCloseTo(width * 2, 0.1);
   expect(imageData.height).toBeCloseTo(height * 2, 0.1);
 });
