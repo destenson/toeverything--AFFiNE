@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use napi::{bindgen_prelude::*, Env};
 use napi_derive::napi;
 use pdfium_render::prelude::PdfDocument;
@@ -17,6 +19,33 @@ impl Document {
 
   pub fn get_ref(&self) -> &PdfDocument<'static> {
     &*self.inner
+  }
+
+  #[napi]
+  pub fn version(&self) -> String {
+    let version = self.inner.version();
+    format!("{version:?}").to_lowercase()
+  }
+
+  #[napi]
+  pub fn metadata(&self) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for tag in self.inner.metadata().iter() {
+      let key = tag.tag_type();
+      let value = tag.value();
+      map.insert(format!("{key:?}").to_lowercase(), value.to_string());
+    }
+    map
+  }
+
+  #[napi]
+  pub fn permissions(&self) {
+    unimplemented!()
+  }
+
+  #[napi]
+  pub fn signatures(&self) {
+    unimplemented!()
   }
 
   #[napi]

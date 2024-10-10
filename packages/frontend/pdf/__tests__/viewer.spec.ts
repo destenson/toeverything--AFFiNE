@@ -7,7 +7,31 @@ import { assert, expect, test } from 'vitest';
 
 import { Viewer } from '../index';
 
-test('pdf viewer', async () => {
+test('pdf basic info', async () => {
+  const path = fileURLToPath(new URL('..', import.meta.url));
+  const viewer = Viewer.bindToLibrary(path);
+
+  const filepath = fileURLToPath(
+    new URL('./fixtures/lorem-ipsum.pdf', import.meta.url)
+  );
+  const bytes = readFileSync(filepath);
+  const id = nanoid();
+
+  const doc = viewer.open(id, bytes);
+  assert(doc);
+
+  expect(doc.version()).toBe('pdf1_3');
+
+  const metadata = doc.metadata();
+  expect(metadata.title).toBe('lorem ipsum');
+  expect(metadata.creator).toBe('Pages');
+  expect(metadata.producer).toMatch('Quartz PDFContex');
+
+  const pages = doc.pages();
+  expect(pages.len()).toBe(3);
+});
+
+test('pdf minimal', async () => {
   const path = fileURLToPath(new URL('..', import.meta.url));
   const viewer = Viewer.bindToLibrary(path);
 
@@ -15,7 +39,6 @@ test('pdf viewer', async () => {
     new URL('./fixtures/minimal.pdf', import.meta.url)
   );
   const bytes = readFileSync(filepath);
-
   const id = nanoid();
 
   const doc = viewer.open(id, bytes);

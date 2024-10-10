@@ -9,5 +9,6 @@ Status: Working in progress
 ```console
 $ yarn workspace @affine/pdf build:debug -v
 
-$ yarn test -t 'pdf viewer'
+$ yarn test -t 'pdf basic info'
+$ yarn test -t 'pdf minimal'
 ```
