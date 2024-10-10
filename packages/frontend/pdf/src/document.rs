@@ -13,7 +13,7 @@ pub struct Document {
 
 #[napi]
 impl Document {
-  pub fn new(inner: SharedReference<Viewer, PdfDocument<'_>>) -> Self {
+  pub(crate) fn new_with(inner: SharedReference<Viewer, PdfDocument<'_>>) -> Self {
     Self { inner }
   }
 
@@ -50,10 +50,10 @@ impl Document {
 
   #[napi]
   pub fn pages(&self, reference: Reference<Document>, env: Env) -> Result<Pages> {
-    Pages::new(reference, env)
+    Pages::new_with(reference, env)
   }
 
   pub fn clone(&self, env: Env) -> Result<Self> {
-    self.inner.clone(env).map(Self::new)
+    self.inner.clone(env).map(Self::new_with)
   }
 }

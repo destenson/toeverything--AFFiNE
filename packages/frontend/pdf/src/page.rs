@@ -11,7 +11,7 @@ pub struct Page {
 
 #[napi]
 impl Page {
-  pub fn new(inner: SharedReference<Pages, PdfPage<'static>>) -> Self {
+  pub(crate) fn new_with(inner: SharedReference<Pages, PdfPage<'_>>) -> Self {
     Self { inner }
   }
 

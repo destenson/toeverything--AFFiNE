@@ -90,7 +90,7 @@ impl Viewer {
       })
       .ok()?;
 
-    let doc = Document::new(inner);
+    let doc = Document::new_with(inner);
 
     let mut docs = self.docs.write().ok()?;
 

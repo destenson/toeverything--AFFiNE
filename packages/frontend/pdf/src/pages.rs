@@ -11,7 +11,7 @@ pub struct Pages {
 
 #[napi]
 impl Pages {
-  pub fn new(reference: Reference<Document>, env: Env) -> Result<Self> {
+  pub(crate) fn new_with(reference: Reference<Document>, env: Env) -> Result<Self> {
     Ok(Self {
       inner: reference.share_with(env, |doc| Ok(doc.get_ref().pages()))?,
     })
@@ -35,7 +35,7 @@ impl Pages {
           .get(index)
           .map_err(|e| Error::from_reason(e.to_string()))
       })
-      .map(Page::new)
+      .map(Page::new_with)
       .ok()
   }
 }
