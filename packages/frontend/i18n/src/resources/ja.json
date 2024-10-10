@@ -124,6 +124,7 @@
   "com.affine.aboutAFFiNE.checkUpdate.subtitle.restart": "再起動してアップデートを適用します",
   "com.affine.aboutAFFiNE.checkUpdate.subtitle.update-available": "新しいバージョンが使用可能 ({{version}})",
   "com.affine.aboutAFFiNE.checkUpdate.title": "アップデートの確認",
+  "com.affine.aboutAFFiNE.contact.community": "AFFiNEコミュニティ",
   "com.affine.aboutAFFiNE.legal.privacy": "プライバシー",
   "com.affine.aboutAFFiNE.version.app": "アプリ版",
   "com.affine.aboutAFFiNE.version.editor.title": "エディター版",
