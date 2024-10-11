@@ -25,7 +25,7 @@ test('pdf basic info', async () => {
   const metadata = doc.metadata();
   expect(metadata.title).toBe('lorem ipsum');
   expect(metadata.creator).toBe('Pages');
-  expect(metadata.producer).toMatch('Quartz PDFContex');
+  expect(metadata.producer).toMatch('Quartz PDFContext');
 
   const pages = doc.pages();
   expect(pages.len()).toBe(3);
