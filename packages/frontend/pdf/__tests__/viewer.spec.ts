@@ -2,12 +2,15 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { nanoid } from '@blocksuite/affine/store';
-import { Jimp } from 'jimp';
+import { createJimp } from '@jimp/core';
+import png from '@jimp/js-png';
 import { assert, expect, test } from 'vitest';
 
 import { Viewer } from '../index';
 
-test('pdf basic info', async () => {
+const Jimp = createJimp({ formats: [png] });
+
+test('pdf basic info', () => {
   const path = fileURLToPath(new URL('..', import.meta.url));
   const viewer = Viewer.bindToLibrary(path);
 
