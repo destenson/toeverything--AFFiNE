@@ -2,7 +2,7 @@
 
 Status: Working in progress
 
-- [] stream
+- [ ] stream
 
 ### Development
 

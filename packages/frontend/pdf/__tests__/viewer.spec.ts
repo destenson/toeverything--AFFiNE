@@ -29,6 +29,15 @@ test('pdf basic info', async () => {
 
   const pages = doc.pages();
   expect(pages.len()).toBe(3);
+
+  const closed = viewer.close(id);
+  expect(closed).toBe(true);
+
+  const closed2 = viewer.close(id);
+  expect(closed2).toBe(false);
+
+  const doc2 = viewer.openWithId(id);
+  expect(doc2).toBeNull();
 });
 
 test('pdf minimal', async () => {

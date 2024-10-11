@@ -15,6 +15,7 @@ export declare class ImageData {
 }
 
 export declare class Page {
+<<<<<<< HEAD
   text(): string
   rect(): Rect
   paperSize(): PagerSize
@@ -26,6 +27,27 @@ export declare class Page {
   renderAsBytes(width: number, height: number, rotation?: Rotation | undefined | null): Uint8Array | null
   render(width: number, height: number, rotation?: Rotation | undefined | null): Uint8ClampedArray | null
   renderWithScale(scale: number): ImageData | null
+=======
+  text(): string;
+  rect(): Rect;
+  paperSize(): PagerSize;
+  layout(): Orientation;
+  /** Returns `true` if this [`Page`] has orientation [`Orientation::Portrait`]. */
+  isPortrait(): boolean;
+  /** Returns `true` if this [`Page`] has orientation [`Orientation::Landscape`]. */
+  isLandscape(): boolean;
+  renderAsBytes(
+    width: number,
+    height: number,
+    rotation?: Rotation | undefined | null
+  ): Uint8Array | null;
+  render(
+    width: number,
+    height: number,
+    rotation?: Rotation | undefined | null
+  ): Uint8ClampedArray | null;
+  renderWithScale(scale: number): ImageData | null;
+>>>>>>> 58b6c1565 (chore: download dynamic libraries at build time)
 }
 
 export declare class PagerSize {

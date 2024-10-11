@@ -101,11 +101,10 @@ impl Viewer {
 
   #[napi]
   pub fn close(&self, id: String) -> Result<bool> {
-    let mut docs = self
-      .docs
-      .write()
-      .map_err(|e| Error::from_reason(e.to_string()))?;
-
-    Ok(docs.remove(&id).is_some())
+    let state = match self.docs.write() {
+      Ok(mut docs) => docs.remove(&id).is_some(),
+      Err(_) => false,
+    };
+    Ok(state)
   }
 }

@@ -39,14 +39,14 @@ impl Page {
     self.inner.orientation().into()
   }
 
-  /// Returns `true` if this [Page] has orientation [Orientation::Portrait].
+  /// Returns `true` if this [`Page`] has orientation [`Orientation::Portrait`].
   #[napi]
   #[inline]
   pub fn is_portrait(&self) -> bool {
     self.layout() == Orientation::Portrait
   }
 
-  /// Returns `true` if this [Page] has orientation [Orientation::Landscape].
+  /// Returns `true` if this [`Page`] has orientation [`Orientation::Landscape`].
   #[napi]
   #[inline]
   pub fn is_landscape(&self) -> bool {

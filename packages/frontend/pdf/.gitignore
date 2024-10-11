@@ -1,1 +1,6 @@
 *.dylib
+
+*.so
+
+*.dll
+*.lib

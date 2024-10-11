@@ -8,7 +8,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # pdfium-render = "0.8" 
-pdfium-render = { git = "https://github.com/fundon/pdfium-render", branch = "msrv-1.63" }
+# pdfium-render = { git = "https://github.com/fundon/pdfium-render", branch = "msrv-1.63" }
+pdfium-render = { path = "../../../../pdfium-render" }
 chrono        = { workspace = true }
 anyhow        = { workspace = true }
 napi          = { workspace = true }
@@ -19,6 +20,10 @@ serde_json    = { workspace = true }
 tokio         = { workspace = true, features = ["full"] }
 
 [build-dependencies]
-dotenv        = { workspace = true }
 napi-build    = { workspace = true }
+anyhow        = { workspace = true }
 tokio         = { workspace = true, features = ["full"] }
+
+reqwest       = "0.12"
+tar           = "0.4"
+flate2        = "1.0"
