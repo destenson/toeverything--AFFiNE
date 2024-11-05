@@ -77,6 +77,8 @@ AFFiNE.use('captcha', {
   },
 });
 
+AFFiNE.use('worker');
+
 if (AFFiNE.deploy) {
   AFFiNE.mailer = {
     service: 'gmail',
