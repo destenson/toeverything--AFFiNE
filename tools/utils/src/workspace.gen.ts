@@ -546,6 +546,7 @@ export const PackageList = [
       'packages/common/env',
       'packages/frontend/graphql',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
       'packages/frontend/templates',
       'packages/frontend/track',
       'blocksuite/affine/all',

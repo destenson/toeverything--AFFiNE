@@ -4,6 +4,7 @@ import {
   CloudAwarenessStorage,
   CloudBlobStorage,
   CloudDocStorage,
+  StaticCloudDocStorage,
 } from './cloud';
 import {
   IndexedDBBlobStorage,
@@ -31,6 +32,7 @@ const idbv1 = [
 
 const cloud = [
   CloudDocStorage,
+  StaticCloudDocStorage,
   CloudBlobStorage,
   CloudAwarenessStorage,
 ] satisfies StorageConstructor[];

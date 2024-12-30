@@ -1,18 +1,30 @@
 import { difference } from 'lodash-es';
+import type { Observable } from 'rxjs';
 
 import type { BlobRecord, BlobStorage } from '../../storage';
 import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
+import EventEmitter2 from 'eventemitter2';
+
+export interface BlobSyncState {
+  isStorageOverCapacity: boolean;
+}
 
 export interface BlobSync {
+  readonly state$: Observable<BlobSyncState>;
   downloadBlob(
     blobId: string,
     signal?: AbortSignal
   ): Promise<BlobRecord | null>;
   uploadBlob(blob: BlobRecord, signal?: AbortSignal): Promise<void>;
+  fullSync(signal?: AbortSignal): Promise<void>;
+  setMaxBlobSize(size: number): void;
+  onReachedMaxBlobSize(cb: () => void): () => void;
 }
 
 export class BlobSyncImpl implements BlobSync {
   private abort: AbortController | null = null;
+  private maxBlobSize: number = 1024 * 1024 * 100; // 100MB
+  readonly event = new EventEmitter2();
 
   constructor(
     readonly local: BlobStorage,
@@ -42,7 +54,7 @@ export class BlobSyncImpl implements BlobSync {
     );
   }
 
-  private async sync(signal?: AbortSignal) {
+  async fullSync(signal?: AbortSignal) {
     throwIfAborted(signal);
 
     for (const remote of this.remotes) {
@@ -113,7 +125,7 @@ export class BlobSyncImpl implements BlobSync {
     const abort = new AbortController();
     this.abort = abort;
 
-    this.sync(abort.signal).catch(error => {
+    this.fullSync(abort.signal).catch(error => {
       if (error === MANUALLY_STOP) {
         return;
       }
@@ -128,6 +140,14 @@ export class BlobSyncImpl implements BlobSync {
 
   addPriority(_id: string, _priority: number): () => void {
     // TODO: implement
+    return () => {};
+  }
+
+  setMaxBlobSize(size: number): void {
+    this.maxBlobSize = size;
+  }
+
+  onReachedMaxBlobSize(cb: () => void): () => void {
     return () => {};
   }
 }

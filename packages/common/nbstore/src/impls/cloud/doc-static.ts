@@ -13,6 +13,7 @@ interface CloudDocStorageOptions extends DocStorageOptions {
 }
 
 export class StaticCloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
+  static identifier = 'StaticCloudDocStorage';
   override connection = new HttpConnection(this.options.serverBaseUrl);
   override async pushDocUpdate(
     update: DocUpdate,

@@ -17,6 +17,10 @@ export class BlobFrontend {
     return this.sync ? this.sync.uploadBlob(blob) : this.storage.set(blob);
   }
 
+  fullSync() {
+    return this.sync ? this.sync.fullSync() : Promise.resolve();
+  }
+
   addPriority(_id: string, _priority: number) {
     // not support yet
   }

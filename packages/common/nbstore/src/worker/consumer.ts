@@ -221,6 +221,20 @@ export class WorkerConsumer {
         }),
       'blobSync.downloadBlob': key => this.blobSync.downloadBlob(key),
       'blobSync.uploadBlob': blob => this.blobSync.uploadBlob(blob),
+      'blobSync.fullSync': () =>
+        new Observable(subscriber => {
+          const abortController = new AbortController();
+          this.blobSync
+            .fullSync(abortController.signal)
+            .then(() => {
+              subscriber.next(true);
+              subscriber.complete();
+            })
+            .catch(error => {
+              subscriber.error(error);
+            });
+          return () => abortController.abort();
+        }),
       'awarenessSync.update': ({ awareness, origin }) =>
         this.awarenessSync.update(awareness, origin),
       'awarenessSync.subscribeUpdate': docId =>

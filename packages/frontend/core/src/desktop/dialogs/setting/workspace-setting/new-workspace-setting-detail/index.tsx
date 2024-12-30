@@ -71,6 +71,9 @@ export const WorkspaceSettingDetail = ({
             />
           </SettingWrapper>
         )}
+        <SettingWrapper>
+          <DeleteLeaveWorkspace onCloseSetting={onCloseSetting} />
+        </SettingWrapper>
       </FrameworkScope>
     </FrameworkScope>
   );

@@ -188,6 +188,27 @@ class WorkerBlobSync implements BlobSync {
   uploadBlob(blob: BlobRecord, _signal?: AbortSignal): Promise<void> {
     return this.client.call('blobSync.uploadBlob', blob);
   }
+  fullSync(signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const abortListener = () => {
+        reject(signal?.reason);
+        subscription.unsubscribe();
+      };
+
+      signal?.addEventListener('abort', abortListener);
+
+      const subscription = this.client.ob$('blobSync.fullSync').subscribe({
+        next() {
+          signal?.removeEventListener('abort', abortListener);
+          resolve();
+        },
+        error(err) {
+          signal?.removeEventListener('abort', abortListener);
+          reject(err);
+        },
+      });
+    });
+  }
 }
 
 class WorkerAwarenessSync implements AwarenessSync {

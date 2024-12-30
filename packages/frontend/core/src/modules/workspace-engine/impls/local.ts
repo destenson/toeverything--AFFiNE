@@ -18,7 +18,6 @@ import {
   type WorkspaceMetadata,
   type WorkspaceProfileInfo,
 } from '../../workspace';
-import type { WorkspaceEngineStorageProvider } from '../providers/engine';
 import { getWorkspaceProfileWorker } from './out-worker';
 
 export const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY = 'affine-local-workspace';

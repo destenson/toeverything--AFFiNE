@@ -89,6 +89,7 @@ interface GroupedWorkerOps {
   blobSync: {
     downloadBlob: [string, BlobRecord | null];
     uploadBlob: [BlobRecord, void];
+    fullSync: [void, boolean];
   };
 
   awarenessSync: {

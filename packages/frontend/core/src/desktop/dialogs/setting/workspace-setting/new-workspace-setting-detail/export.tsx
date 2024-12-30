@@ -47,7 +47,7 @@ export const DesktopExportPanel = ({
       });
       if (isOnline) {
         await workspace.engine.doc.waitForSynced();
-        await workspace.engine.blob.sync();
+        await workspace.engine.blob.fullSync();
       }
 
       const result = await desktopApi.handler?.dialog.saveDBFileAs(workspaceId);
