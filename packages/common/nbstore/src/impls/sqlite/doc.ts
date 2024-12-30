@@ -1,11 +1,9 @@
 import { share } from '../../connection';
 import { type DocClock, DocStorageBase, type DocUpdate } from '../../storage';
-import { NativeDBConnection } from './db';
+import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
-export class SqliteDocStorage extends DocStorageBase {
-  override connection = share(
-    new NativeDBConnection(this.peer, this.spaceType, this.spaceId)
-  );
+export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
+  override connection = share(new NativeDBConnection(this.options));
 
   get db() {
     return this.connection.apis;

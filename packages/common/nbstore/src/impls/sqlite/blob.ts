@@ -1,11 +1,13 @@
 import { share } from '../../connection';
 import { type BlobRecord, BlobStorageBase } from '../../storage';
-import { NativeDBConnection } from './db';
+import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
 export class SqliteBlobStorage extends BlobStorageBase {
-  override connection = share(
-    new NativeDBConnection(this.peer, this.spaceType, this.spaceId)
-  );
+  override connection = share(new NativeDBConnection(this.options));
+
+  constructor(private readonly options: SqliteNativeDBOptions) {
+    super();
+  }
 
   get db() {
     return this.connection.apis;

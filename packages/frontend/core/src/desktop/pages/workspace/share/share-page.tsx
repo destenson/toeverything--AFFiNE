@@ -179,27 +179,23 @@ const SharePageInner = ({
         isSharedMode: true,
       },
       {
-        local: [
-          {
+        local: {
+          doc: {
             name: 'StaticCloudDocStorage',
             opts: {
               id: workspaceId,
-              peer: serverService.server.id,
-              type: 'workspace',
               serverBaseUrl: serverService.server.baseUrl,
             },
           },
-          {
+          blob: {
             name: 'CloudBlobStorage',
             opts: {
               id: workspaceId,
-              peer: serverService.server.id,
-              type: 'workspace',
               serverBaseUrl: serverService.server.baseUrl,
             },
           },
-        ],
-        remotes: [],
+        },
+        remotes: {},
       }
     );
 

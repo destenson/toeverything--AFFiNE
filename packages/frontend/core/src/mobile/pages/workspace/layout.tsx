@@ -24,6 +24,7 @@ import {
   type PropsWithChildren,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useState,
 } from 'react';
 import { map } from 'rxjs';
@@ -110,14 +111,18 @@ export const WorkspaceLayout = ({
 
   const isRootDocReady =
     useLiveData(
-      workspace
-        ? LiveData.from(
-            workspace.engine.doc
-              .docState$(workspace.id)
-              .pipe(map(v => v.ready)),
-            false
-          )
-        : null
+      useMemo(
+        () =>
+          workspace
+            ? LiveData.from(
+                workspace.engine.doc
+                  .docState$(workspace.id)
+                  .pipe(map(v => v.ready)),
+                false
+              )
+            : null,
+        [workspace]
+      )
     ) ?? false;
 
   if (!workspace) {

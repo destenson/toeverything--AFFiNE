@@ -7,8 +7,10 @@ import type {
   DocRecord,
   DocUpdate,
   ListedBlobRecord,
+  StorageType,
 } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
+import type { BlobSyncState } from '../sync/blob';
 import type { DocSyncDocState, DocSyncState } from '../sync/doc';
 
 type StorageInitOptions = Values<{
@@ -19,8 +21,8 @@ type StorageInitOptions = Values<{
 }>;
 
 export interface WorkerInitOptions {
-  local: StorageInitOptions[];
-  remotes: StorageInitOptions[][];
+  local: { [key in StorageType]?: StorageInitOptions };
+  remotes: Record<string, { [key in StorageType]?: StorageInitOptions }>;
 }
 
 interface GroupedWorkerOps {
@@ -90,6 +92,9 @@ interface GroupedWorkerOps {
     downloadBlob: [string, BlobRecord | null];
     uploadBlob: [BlobRecord, void];
     fullSync: [void, boolean];
+    setMaxBlobSize: [number, void];
+    onReachedMaxBlobSize: [void, number];
+    state: [void, BlobSyncState];
   };
 
   awarenessSync: {

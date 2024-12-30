@@ -1,7 +1,5 @@
 import type { DocClock, DocClocks } from './doc';
-import { type Storage, StorageBase, type StorageOptions } from './storage';
-
-export interface SyncStorageOptions extends StorageOptions {}
+import { type Storage, StorageBase } from './storage';
 
 export interface SyncStorage extends Storage {
   readonly storageType: 'sync';
@@ -21,10 +19,8 @@ export interface SyncStorage extends Storage {
   clearClocks(): Promise<void>;
 }
 
-export abstract class BasicSyncStorage<
-    Opts extends SyncStorageOptions = SyncStorageOptions,
-  >
-  extends StorageBase<Opts>
+export abstract class SyncStorageBase
+  extends StorageBase
   implements SyncStorage
 {
   override readonly storageType = 'sync';

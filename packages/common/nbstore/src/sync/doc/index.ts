@@ -1,7 +1,9 @@
 import type { Observable } from 'rxjs';
-import { combineLatest, map } from 'rxjs';
+import { combineLatest, defer, map, of } from 'rxjs';
 
 import type { DocStorage, SyncStorage } from '../../storage';
+import { MANUALLY_STOP } from '../../utils/throw-if-aborted';
+import type { PeerStorageOptions } from '../types';
 import { DocSyncPeer } from './peer';
 
 export interface DocSyncState {
@@ -26,45 +28,57 @@ export interface DocSync {
 }
 
 export class DocSyncImpl implements DocSync {
-  private readonly peers: DocSyncPeer[] = this.remotes.map(
-    remote => new DocSyncPeer(this.local, this.sync, remote)
+  private readonly peers: DocSyncPeer[] = Object.entries(
+    this.storages.remotes
+  ).map(
+    ([peerId, remote]) =>
+      new DocSyncPeer(peerId, this.storages.local, this.sync, remote)
   );
   private abort: AbortController | null = null;
 
-  readonly state$: Observable<DocSyncState> = combineLatest(
-    this.peers.map(peer => peer.peerState$)
-  ).pipe(
-    map(allPeers => ({
-      total: allPeers.reduce((acc, peer) => Math.max(acc, peer.total), 0),
-      syncing: allPeers.reduce((acc, peer) => Math.max(acc, peer.syncing), 0),
-      synced: allPeers.every(peer => peer.synced),
-      retrying: allPeers.some(peer => peer.retrying),
-      errorMessage:
-        allPeers.find(peer => peer.errorMessage)?.errorMessage ?? null,
-    }))
-  );
+  get state$() {
+    return combineLatest(this.peers.map(peer => peer.peerState$)).pipe(
+      map(allPeers => ({
+        total: allPeers.reduce((acc, peer) => Math.max(acc, peer.total), 0),
+        syncing: allPeers.reduce((acc, peer) => Math.max(acc, peer.syncing), 0),
+        synced: allPeers.every(peer => peer.synced),
+        retrying: allPeers.some(peer => peer.retrying),
+        errorMessage:
+          allPeers.find(peer => peer.errorMessage)?.errorMessage ?? null,
+      }))
+    ) as Observable<DocSyncState>;
+  }
 
   constructor(
-    readonly local: DocStorage,
-    readonly sync: SyncStorage,
-    readonly remotes: DocStorage[]
+    readonly storages: PeerStorageOptions<DocStorage>,
+    readonly sync: SyncStorage
   ) {}
 
   docState$(docId: string): Observable<DocSyncDocState> {
+    if (this.peers.length === 0) {
+      return of({
+        errorMessage: null,
+        retrying: false,
+        syncing: false,
+        synced: true,
+      });
+    }
     return combineLatest(this.peers.map(peer => peer.docState$(docId))).pipe(
-      map(allPeers => ({
-        errorMessage:
-          allPeers.find(peer => peer.errorMessage)?.errorMessage ?? null,
-        retrying: allPeers.some(peer => peer.retrying),
-        syncing: allPeers.some(peer => peer.syncing),
-        synced: allPeers.every(peer => peer.synced),
-      }))
+      map(allPeers => {
+        return {
+          errorMessage:
+            allPeers.find(peer => peer.errorMessage)?.errorMessage ?? null,
+          retrying: allPeers.some(peer => peer.retrying),
+          syncing: allPeers.some(peer => peer.syncing),
+          synced: allPeers.every(peer => peer.synced),
+        };
+      })
     );
   }
 
   start() {
     if (this.abort) {
-      this.abort.abort();
+      this.abort.abort(MANUALLY_STOP);
     }
     const abort = new AbortController();
     this.abort = abort;

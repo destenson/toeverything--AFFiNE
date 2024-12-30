@@ -10,47 +10,49 @@ import {
   type DocStorage,
   type DocUpdate,
   type ListedBlobRecord,
-  type StorageOptions,
-  universalId,
 } from '../storage';
 import type { AwarenessSync } from '../sync/awareness';
 import type { BlobSync } from '../sync/blob';
 import type { DocSync } from '../sync/doc';
-import type { WorkerOps } from './ops';
+import type { WorkerInitOptions, WorkerOps } from './ops';
 
 export type { WorkerInitOptions } from './ops';
 
 export class WorkerClient {
   constructor(
     private readonly client: OpClient<WorkerOps>,
-    private readonly options: StorageOptions
-  ) {}
+    options: WorkerInitOptions
+  ) {
+    client.listen();
+    this.client.call('worker.init', options).catch(err => {
+      console.error('error initializing worker', err);
+    });
+    this.docStorage = new WorkerDocStorage(this.client);
+    this.blobStorage = new WorkerBlobStorage(this.client);
+    this.docSync = new WorkerDocSync(this.client);
+    this.blobSync = new WorkerBlobSync(this.client);
+    this.awarenessSync = new WorkerAwarenessSync(this.client);
+    this.docFrontend = new DocFrontend(this.docStorage, this.docSync);
+    this.blobFrontend = new BlobFrontend(this.blobStorage, this.blobSync);
+    this.awarenessFrontend = new AwarenessFrontend(this.awarenessSync);
+  }
 
-  private readonly docStorage = new WorkerDocStorage(this.client, this.options);
-  private readonly blobStorage = new WorkerBlobStorage(
-    this.client,
-    this.options
-  );
-  private readonly docSync = new WorkerDocSync(this.client);
-  private readonly blobSync = new WorkerBlobSync(this.client);
-  private readonly awarenessSync = new WorkerAwarenessSync(this.client);
+  private readonly docStorage: WorkerDocStorage;
+  private readonly blobStorage: WorkerBlobStorage;
+  private readonly docSync: WorkerDocSync;
+  private readonly blobSync: WorkerBlobSync;
+  private readonly awarenessSync: WorkerAwarenessSync;
 
-  readonly docFrontend = new DocFrontend(this.docStorage, this.docSync);
-  readonly blobFrontend = new BlobFrontend(this.blobStorage, this.blobSync);
-  readonly awarenessFrontend = new AwarenessFrontend(this.awarenessSync);
+  readonly docFrontend: DocFrontend;
+  readonly blobFrontend: BlobFrontend;
+  readonly awarenessFrontend: AwarenessFrontend;
 }
 
 class WorkerDocStorage implements DocStorage {
-  constructor(
-    private readonly client: OpClient<WorkerOps>,
-    private readonly options: StorageOptions
-  ) {}
+  constructor(private readonly client: OpClient<WorkerOps>) {}
 
-  readonly peer = this.options.peer;
-  readonly spaceType = this.options.type;
-  readonly spaceId = this.options.id;
-  readonly universalId = universalId(this.options);
   readonly storageType = 'doc';
+  readonly isReadonly = false;
 
   async getDoc(docId: string) {
     return this.client.call('docStorage.getDoc', docId);
@@ -121,16 +123,9 @@ class WorkerDocConnection extends DummyConnection {
 }
 
 class WorkerBlobStorage implements BlobStorage {
-  constructor(
-    private readonly client: OpClient<WorkerOps>,
-    private readonly options: StorageOptions
-  ) {}
+  constructor(private readonly client: OpClient<WorkerOps>) {}
 
   readonly storageType = 'blob';
-  readonly peer = this.options.peer;
-  readonly spaceType = this.options.type;
-  readonly spaceId = this.options.id;
-  readonly universalId = universalId(this.options);
 
   get(key: string, _signal?: AbortSignal): Promise<BlobRecord | null> {
     return this.client.call('blobStorage.getBlob', key);
@@ -179,6 +174,22 @@ class WorkerDocSync implements DocSync {
 
 class WorkerBlobSync implements BlobSync {
   constructor(private readonly client: OpClient<WorkerOps>) {}
+  readonly state$ = this.client.ob$('blobSync.state');
+  setMaxBlobSize(size: number): void {
+    this.client.call('blobSync.setMaxBlobSize', size).catch(err => {
+      console.error('error setting max blob size', err);
+    });
+  }
+  onReachedMaxBlobSize(cb: (byteSize: number) => void): () => void {
+    const subscription = this.client
+      .ob$('blobSync.onReachedMaxBlobSize')
+      .subscribe(byteSize => {
+        cb(byteSize);
+      });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }
   downloadBlob(
     blobId: string,
     _signal?: AbortSignal

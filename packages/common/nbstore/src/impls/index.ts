@@ -15,7 +15,7 @@ import { IndexedDBV1BlobStorage, IndexedDBV1DocStorage } from './idb/v1';
 
 type StorageConstructor = {
   new (...args: any[]): Storage;
-  identifier: string;
+  readonly identifier: string;
 };
 
 const idb = [

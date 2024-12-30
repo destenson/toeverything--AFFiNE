@@ -2,12 +2,17 @@ import { apis } from '@affine/electron-api';
 
 import { DummyConnection } from '../../../connection';
 import { BlobStorageBase } from '../../../storage';
+import type { SpaceType } from '../../../utils/universal-id';
 
 /**
  * @deprecated readonly
  */
 export class SqliteV1BlobStorage extends BlobStorageBase {
   override connection = new DummyConnection();
+
+  constructor(private readonly options: { type: SpaceType; id: string }) {
+    super();
+  }
 
   get db() {
     if (!apis) {
@@ -19,8 +24,8 @@ export class SqliteV1BlobStorage extends BlobStorageBase {
 
   override async get(key: string) {
     const data: Uint8Array | null = await this.db.getBlob(
-      this.spaceType,
-      this.spaceId,
+      this.options.type,
+      this.options.id,
       key
     );
 
@@ -38,12 +43,12 @@ export class SqliteV1BlobStorage extends BlobStorageBase {
 
   override async delete(key: string, permanently: boolean) {
     if (permanently) {
-      await this.db.deleteBlob(this.spaceType, this.spaceId, key);
+      await this.db.deleteBlob(this.options.type, this.options.id, key);
     }
   }
 
   override async list() {
-    const keys = await this.db.getBlobKeys(this.spaceType, this.spaceId);
+    const keys = await this.db.getBlobKeys(this.options.type, this.options.id);
 
     return keys.map(key => ({
       key,

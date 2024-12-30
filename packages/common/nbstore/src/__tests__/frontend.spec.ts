@@ -19,7 +19,7 @@ test('doc', async () => {
 
   const docStorage = new IndexedDBDocStorage({
     id: 'ws1',
-    peer: 'a',
+    flavour: 'a',
     type: 'workspace',
   });
 
@@ -57,15 +57,11 @@ test('doc', async () => {
 
 test('awareness', async () => {
   const storage1 = new BroadcastChannelAwarenessStorage({
-    id: 'ws1',
-    peer: 'a',
-    type: 'workspace',
+    id: 'ws1:a',
   });
 
   const storage2 = new BroadcastChannelAwarenessStorage({
-    id: 'ws1',
-    peer: 'b',
-    type: 'workspace',
+    id: 'ws1:b',
   });
 
   storage1.connection.connect();
@@ -90,13 +86,23 @@ test('awareness', async () => {
   const awarenessC = new Awareness(docC);
 
   {
-    const sync = new AwarenessSyncImpl(storage1, [storage2]);
+    const sync = new AwarenessSyncImpl({
+      local: storage1,
+      remotes: {
+        b: storage2,
+      },
+    });
     const frontend = new AwarenessFrontend(sync);
     frontend.connect(awarenessA);
     frontend.connect(awarenessB);
   }
   {
-    const sync = new AwarenessSyncImpl(storage2, [storage1]);
+    const sync = new AwarenessSyncImpl({
+      local: storage2,
+      remotes: {
+        a: storage1,
+      },
+    });
     const frontend = new AwarenessFrontend(sync);
     frontend.connect(awarenessC);
   }

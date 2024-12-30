@@ -245,14 +245,18 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
 
   const isRootDocReady =
     useLiveData(
-      workspace
-        ? LiveData.from(
-            workspace.engine.doc
-              .docState$(workspace.id)
-              .pipe(map(v => v.ready)),
-            false
-          )
-        : null
+      useMemo(
+        () =>
+          workspace
+            ? LiveData.from(
+                workspace.engine.doc
+                  .docState$(workspace.id)
+                  .pipe(map(v => v.ready)),
+                false
+              )
+            : null,
+        [workspace]
+      )
     ) ?? false;
 
   useEffect(() => {

@@ -1,13 +1,6 @@
 import { groupBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
-import {
-  combineLatest,
-  map,
-  Observable,
-  of,
-  Subject,
-  Subscription,
-} from 'rxjs';
+import { combineLatest, map, Observable, Subject, Subscription } from 'rxjs';
 import {
   applyUpdate,
   type Doc as YDoc,
@@ -16,10 +9,10 @@ import {
 } from 'yjs';
 
 import type { DocRecord, DocStorage } from '../storage';
-import type { DocSync, DocSyncDocState, DocSyncState } from '../sync/doc';
+import type { DocSync } from '../sync/doc';
 import { AsyncPriorityQueue } from '../utils/async-priority-queue';
 import { isEmptyUpdate } from '../utils/is-empty-update';
-import { throwIfAborted } from '../utils/throw-if-aborted';
+import { MANUALLY_STOP, throwIfAborted } from '../utils/throw-if-aborted';
 
 const NBSTORE_ORIGIN = 'nbstore-frontend';
 
@@ -121,7 +114,7 @@ export class DocFrontend {
 
   constructor(
     public readonly storage: DocStorage,
-    private readonly sync: DocSync | null,
+    private readonly sync: DocSync,
     readonly options: DocFrontendOptions = {}
   ) {}
 
@@ -133,7 +126,7 @@ export class DocFrontend {
     }>(subscribe => {
       const next = () => {
         subscribe.next({
-          ready: this.status.readyDocs.has(docId) ?? false,
+          ready: this.status.readyDocs.has(docId),
           loaded: this.status.connectedDocs.has(docId),
           updating:
             (this.status.jobMap.get(docId)?.length ?? 0) > 0 ||
@@ -145,15 +138,14 @@ export class DocFrontend {
         if (updatedId === docId) next();
       });
     });
-    const syncState$ =
-      this.sync?.docState$(docId) ?? of<DocSyncDocState | undefined>(undefined);
+    const syncState$ = this.sync.docState$(docId);
     return combineLatest([frontendState$, syncState$]).pipe(
       map(([frontend, sync]) => ({
         ...frontend,
-        synced: sync?.synced ?? false,
-        syncing: sync?.syncing ?? false,
-        syncRetrying: sync?.retrying ?? false,
-        syncErrorMessage: sync?.errorMessage ?? null,
+        synced: sync.synced,
+        syncing: sync.syncing,
+        syncRetrying: sync.retrying,
+        syncErrorMessage: sync.errorMessage,
       }))
     );
   }
@@ -171,15 +163,15 @@ export class DocFrontend {
         next();
       });
     }),
-    this.sync?.state$ ?? of<DocSyncState | undefined>(undefined),
+    this.sync.state$,
   ]).pipe(
     map(([frontend, sync]) => ({
-      total: sync?.total ?? frontend.total,
+      total: sync.total ?? frontend.total,
       loaded: frontend.loaded,
-      syncing: sync?.syncing ?? 0,
-      synced: sync?.synced ?? false,
-      syncRetrying: sync?.retrying ?? false,
-      syncErrorMessage: sync?.errorMessage ?? null,
+      syncing: sync.syncing,
+      synced: sync.synced,
+      syncRetrying: sync.retrying,
+      syncErrorMessage: sync.errorMessage,
     }))
   ) satisfies Observable<DocFrontendState>;
 
@@ -193,10 +185,11 @@ export class DocFrontend {
   }
 
   stop() {
-    this.abort.abort();
+    this.abort.abort(MANUALLY_STOP);
   }
 
   private async mainLoop(signal?: AbortSignal) {
+    await this.storage.connection.waitForConnected(signal);
     const dispose = this.storage.subscribeDocUpdate((record, origin) => {
       this.event.onStorageUpdate(record, origin);
     });

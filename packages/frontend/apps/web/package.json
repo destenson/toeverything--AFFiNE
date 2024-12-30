@@ -9,6 +9,7 @@
     "dev": "affine bundle --dev"
   },
   "dependencies": {
+    "@affine/nbstore": "workspace:*",
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
     "@affine/i18n": "workspace:*",

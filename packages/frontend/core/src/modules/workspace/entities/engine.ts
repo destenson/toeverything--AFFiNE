@@ -47,13 +47,13 @@ export class WorkspaceEngine extends Entity<{
       throw new Error('Engine is already started');
     }
     this.started = true;
-    this.eventBus.emit(WorkspaceEngineBeforeStart, this);
 
     const { client, dispose } = this.workerProvider.openWorker(
       this.props.engineWorkerInitOptions
     );
     this.worker = client;
     this.disposables.push(dispose);
+    this.eventBus.emit(WorkspaceEngineBeforeStart, this);
 
     const rootDoc = this.workspaceService.workspace.docCollection.doc;
     this.doc.addPriority(rootDoc.guid, 100);
@@ -62,10 +62,4 @@ export class WorkspaceEngine extends Entity<{
     this.disposables.push(() => this.doc.stop());
     this.awareness.connect(this.workspaceService.workspace.awareness);
   }
-
-  get docState$() {
-    return this.doc.state$;
-  }
-
-  rootDocState$ = this.doc.docState$(this.workspaceService.workspace.id);
 }

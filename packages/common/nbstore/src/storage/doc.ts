@@ -4,7 +4,7 @@ import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 import { isEmptyUpdate } from '../utils/is-empty-update';
 import type { Locker } from './lock';
 import { SingletonLocker } from './lock';
-import { type Storage, StorageBase, type StorageOptions } from './storage';
+import { type Storage, StorageBase } from './storage';
 
 export interface DocClock {
   docId: string;
@@ -33,13 +33,14 @@ export interface Editor {
   avatarUrl: string | null;
 }
 
-export interface DocStorageOptions extends StorageOptions {
+export interface DocStorageOptions {
   mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+  id: string;
 }
 
 export interface DocStorage extends Storage {
   readonly storageType: 'doc';
-
+  readonly isReadonly: boolean;
   /**
    * Get a doc record with latest binary.
    */
@@ -91,12 +92,18 @@ export interface DocStorage extends Storage {
 export abstract class DocStorageBase<
     Opts extends DocStorageOptions = DocStorageOptions,
   >
-  extends StorageBase<Opts>
+  extends StorageBase
   implements DocStorage
 {
+  readonly isReadonly: boolean = false;
   private readonly event = new EventEmitter2();
   override readonly storageType = 'doc';
   protected readonly locker: Locker = new SingletonLocker();
+  protected readonly spaceId = this.options.id;
+
+  constructor(protected readonly options: Opts) {
+    super();
+  }
 
   async getDoc(docId: string) {
     await using _lock = await this.lockDocForUpdate(docId);

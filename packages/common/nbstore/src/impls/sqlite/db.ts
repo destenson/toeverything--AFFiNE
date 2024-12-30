@@ -1,7 +1,13 @@
 import { apis } from '@affine/electron-api';
 
 import { AutoReconnectConnection } from '../../connection';
-import { type SpaceType, universalId } from '../../storage';
+import { type SpaceType, universalId } from '../../utils/universal-id';
+
+export interface SqliteNativeDBOptions {
+  readonly peer: string;
+  readonly type: SpaceType;
+  readonly id: string;
+}
 
 type NativeDBApis = NonNullable<typeof apis>['nbstore'] extends infer APIs
   ? {
@@ -16,11 +22,11 @@ type NativeDBApis = NonNullable<typeof apis>['nbstore'] extends infer APIs
 export class NativeDBConnection extends AutoReconnectConnection<void> {
   readonly apis: NativeDBApis;
 
-  constructor(
-    private readonly peer: string,
-    private readonly type: SpaceType,
-    private readonly id: string
-  ) {
+  readonly peer = this.options.peer;
+  readonly type = this.options.type;
+  readonly id = this.options.id;
+
+  constructor(private readonly options: SqliteNativeDBOptions) {
     super();
     if (!apis) {
       throw new Error('Not in electron context.');

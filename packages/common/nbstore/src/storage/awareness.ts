@@ -1,6 +1,4 @@
-import { type Storage, StorageBase, type StorageOptions } from './storage';
-
-export interface AwarenessStorageOptions extends StorageOptions {}
+import { type Storage, StorageBase } from './storage';
 
 export type AwarenessRecord = {
   docId: string;
@@ -23,10 +21,8 @@ export interface AwarenessStorage extends Storage {
   ): () => void;
 }
 
-export abstract class AwarenessStorageBase<
-    Options extends AwarenessStorageOptions = AwarenessStorageOptions,
-  >
-  extends StorageBase<Options>
+export abstract class AwarenessStorageBase
+  extends StorageBase
   implements AwarenessStorage
 {
   override readonly storageType = 'awareness';

@@ -6,11 +6,15 @@ import {
   DocStorageBase,
   type DocUpdate,
 } from '../../../storage';
+import type { SpaceType } from '../../../utils/universal-id';
 
 /**
  * @deprecated readonly
  */
-export class SqliteV1DocStorage extends DocStorageBase {
+export class SqliteV1DocStorage extends DocStorageBase<{
+  type: SpaceType;
+  id: string;
+}> {
   override connection = new DummyConnection();
 
   get db() {
@@ -29,8 +33,8 @@ export class SqliteV1DocStorage extends DocStorageBase {
 
   override async getDoc(docId: string) {
     const bin = await this.db.getDocAsUpdates(
-      this.spaceType,
-      this.spaceId,
+      this.options.type,
+      this.options.id,
       docId
     );
 
@@ -42,7 +46,7 @@ export class SqliteV1DocStorage extends DocStorageBase {
   }
 
   override async deleteDoc(docId: string) {
-    await this.db.deleteDoc(this.spaceType, this.spaceId, docId);
+    await this.db.deleteDoc(this.options.type, this.options.id, docId);
   }
 
   protected override async getDocSnapshot() {

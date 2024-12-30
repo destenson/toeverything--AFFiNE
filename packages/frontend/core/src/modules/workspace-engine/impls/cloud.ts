@@ -73,7 +73,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   readonly flavour = this.server.id;
-  private readonly peerId = this.flavour;
 
   async deleteWorkspace(id: string): Promise<void> {
     await this.graphqlService.gql({
@@ -103,14 +102,18 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     // save the initial state to local storage, then sync to cloud
     const blobStorage = new IndexedDBBlobStorage({
       id: workspaceId,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     });
+    blobStorage.connection.connect();
+    await blobStorage.connection.waitForConnected();
     const docStorage = new IndexedDBDocStorage({
       id: workspaceId,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     });
+    docStorage.connection.connect();
+    await docStorage.connection.waitForConnected();
 
     const docCollection = new DocCollection({
       id: workspaceId,
@@ -255,15 +258,15 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     // we use affine 'static' storage here, which use http protocol, no need to websocket.
     const cloudStorage = new StaticCloudDocStorage({
       id: id,
-      peer: this.peerId,
-      type: 'workspace',
       serverBaseUrl: this.server.serverMetadata.baseUrl,
     });
     const docStorage = new IndexedDBDocStorage({
       id: id,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     });
+    docStorage.connection.connect();
+    await docStorage.connection.waitForConnected();
     // download root doc
     const localData = (await docStorage.getDoc(id))?.bin;
     const cloudData = (await cloudStorage.getDoc(id))?.bin;
@@ -296,7 +299,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
     const localBlob = await new IndexedDBBlobStorage({
       id,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     }).get(blob);
 
@@ -306,8 +309,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const cloudBlob = await new CloudBlobStorage({
       id,
-      peer: this.peerId,
-      type: 'workspace',
       serverBaseUrl: this.server.serverMetadata.baseUrl,
     }).get(blob);
     if (!cloudBlob) {
@@ -333,71 +334,65 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
   getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {
     return {
-      local: [
-        {
+      local: {
+        doc: {
           name: 'IndexedDBDocStorage',
           opts: {
-            peer: this.peerId,
+            flavour: this.flavour,
             type: 'workspace',
             id: workspaceId,
           },
         },
-        {
+        blob: {
           name: 'IndexedDBBlobStorage',
           opts: {
-            peer: this.peerId,
+            flavour: this.flavour,
             type: 'workspace',
             id: workspaceId,
           },
         },
-        {
+        sync: {
           name: 'IndexedDBSyncStorage',
           opts: {
-            peer: this.peerId,
+            flavour: this.flavour,
             type: 'workspace',
             id: workspaceId,
           },
         },
-        {
+        awareness: {
           name: 'BroadcastChannelAwarenessStorage',
           opts: {
-            peer: this.peerId,
-            type: 'workspace',
-            id: workspaceId,
+            id: `${this.flavour}:${workspaceId}`,
           },
         },
-      ],
-      remotes: [
-        [
-          {
+      },
+      remotes: {
+        [`cloud:${this.flavour}`]: {
+          doc: {
             name: 'CloudDocStorage',
             opts: {
-              peer: this.peerId,
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
             },
           },
-          {
+          blob: {
             name: 'CloudBlobStorage',
             opts: {
-              peer: this.peerId,
-              type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
             },
           },
-          {
+          sync: {
             name: 'CloudAwarenessStorage',
             opts: {
-              peer: this.peerId,
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
             },
           },
-        ],
-      ],
+        },
+      },
     };
   }
 

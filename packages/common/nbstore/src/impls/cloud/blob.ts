@@ -5,25 +5,26 @@ import {
   setBlobMutation,
 } from '@affine/graphql';
 
-import {
-  type BlobRecord,
-  BlobStorageBase,
-  type BlobStorageOptions,
-} from '../../storage';
+import { type BlobRecord, BlobStorageBase } from '../../storage';
 import { HttpConnection } from './http';
 
-interface CloudBlobStorageOptions extends BlobStorageOptions {
+interface CloudBlobStorageOptions {
   serverBaseUrl: string;
+  id: string;
 }
 
-export class CloudBlobStorage extends BlobStorageBase<CloudBlobStorageOptions> {
+export class CloudBlobStorage extends BlobStorageBase {
   static readonly identifier = 'CloudBlobStorage';
+
+  constructor(private readonly options: CloudBlobStorageOptions) {
+    super();
+  }
 
   readonly connection = new HttpConnection(this.options.serverBaseUrl);
 
   override async get(key: string) {
     const res = await this.connection.fetch(
-      '/api/workspaces/' + this.spaceId + '/blobs/' + key,
+      '/api/workspaces/' + this.options.id + '/blobs/' + key,
       {
         cache: 'default',
         headers: {
@@ -55,7 +56,7 @@ export class CloudBlobStorage extends BlobStorageBase<CloudBlobStorageOptions> {
     await this.connection.gql({
       query: setBlobMutation,
       variables: {
-        workspaceId: this.spaceId,
+        workspaceId: this.options.id,
         blob: new File([blob.data], blob.key, { type: blob.mime }),
       },
     });
@@ -64,21 +65,21 @@ export class CloudBlobStorage extends BlobStorageBase<CloudBlobStorageOptions> {
   override async delete(key: string, permanently: boolean) {
     await this.connection.gql({
       query: deleteBlobMutation,
-      variables: { workspaceId: this.spaceId, key, permanently },
+      variables: { workspaceId: this.options.id, key, permanently },
     });
   }
 
   override async release() {
     await this.connection.gql({
       query: releaseDeletedBlobsMutation,
-      variables: { workspaceId: this.spaceId },
+      variables: { workspaceId: this.options.id },
     });
   }
 
   override async list() {
     const res = await this.connection.gql({
       query: listBlobsQuery,
-      variables: { workspaceId: this.spaceId },
+      variables: { workspaceId: this.options.id },
     });
 
     return res.workspace.blobs.map(blob => ({

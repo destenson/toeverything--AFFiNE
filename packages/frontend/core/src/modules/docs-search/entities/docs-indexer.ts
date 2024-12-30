@@ -81,24 +81,31 @@ export class DocsIndexer extends Entity {
   }
 
   setupListener() {
-    this.disposables.push(
-      this.workspaceEngine.doc.storage.subscribeDocUpdate(updated => {
-        if (WorkspaceDBService.isDBDocId(updated.docId)) {
-          // skip db doc
-          return;
-        }
-        this.jobQueue
-          .enqueue([
-            {
-              batchKey: updated.docId,
-              payload: { storageDocId: updated.docId },
-            },
-          ])
-          .catch(err => {
-            console.error('Error enqueueing job', err);
-          });
+    this.workspaceEngine.doc.storage.connection
+      .waitForConnected()
+      .then(() => {
+        this.disposables.push(
+          this.workspaceEngine.doc.storage.subscribeDocUpdate(updated => {
+            if (WorkspaceDBService.isDBDocId(updated.docId)) {
+              // skip db doc
+              return;
+            }
+            this.jobQueue
+              .enqueue([
+                {
+                  batchKey: updated.docId,
+                  payload: { storageDocId: updated.docId },
+                },
+              ])
+              .catch(err => {
+                console.error('Error enqueueing job', err);
+              });
+          })
+        );
       })
-    );
+      .catch(err => {
+        console.error('Error waiting for doc storage connection', err);
+      });
   }
 
   async execJob(jobs: Job<IndexerJobPayload>[], signal: AbortSignal) {

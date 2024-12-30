@@ -82,14 +82,18 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     // save the initial state to local storage, then sync to cloud
     const docStorage = new IndexedDBDocStorage({
       id: id,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     });
+    docStorage.connection.connect();
+    await docStorage.connection.waitForConnected();
     const blobStorage = new IndexedDBBlobStorage({
       id: id,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     });
+    blobStorage.connection.connect();
+    await blobStorage.connection.waitForConnected();
 
     const docCollection = new DocCollection({
       id: id,
@@ -187,9 +191,11 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   ): Promise<WorkspaceProfileInfo | undefined> {
     const docStorage = new IndexedDBDocStorage({
       id: id,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     });
+    docStorage.connection.connect();
+    await docStorage.connection.waitForConnected();
     const localData = await docStorage.getDoc(id);
 
     if (!localData) {
@@ -215,7 +221,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
     const blob = await new IndexedDBBlobStorage({
       id: id,
-      peer: this.peerId,
+      flavour: this.flavour,
       type: 'workspace',
     }).get(blobKey);
     return blob ? new Blob([blob.data], { type: blob.mime }) : null;
@@ -223,41 +229,39 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
   getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {
     return {
-      local: [
-        {
+      local: {
+        doc: {
           name: 'IndexedDBDocStorage',
           opts: {
-            peer: this.peerId,
+            flavour: this.flavour,
             type: 'workspace',
             id: workspaceId,
           },
         },
-        {
+        blob: {
           name: 'IndexedDBBlobStorage',
           opts: {
-            peer: this.peerId,
+            flavour: this.flavour,
             type: 'workspace',
             id: workspaceId,
           },
         },
-        {
+        sync: {
           name: 'IndexedDBSyncStorage',
           opts: {
-            peer: this.peerId,
+            flavour: this.flavour,
             type: 'workspace',
             id: workspaceId,
           },
         },
-        {
+        awareness: {
           name: 'BroadcastChannelAwarenessStorage',
           opts: {
-            peer: this.peerId,
-            type: 'workspace',
             id: workspaceId,
           },
         },
-      ],
-      remotes: [],
+      },
+      remotes: {},
     };
   }
 }

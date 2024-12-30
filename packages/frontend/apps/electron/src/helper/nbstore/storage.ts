@@ -1,4 +1,8 @@
-import { parseUniversalId, SpaceStorage } from '@affine/nbstore';
+import {
+  parseUniversalId,
+  SpaceStorage,
+  type SpaceStorageOptions,
+} from '@affine/nbstore';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { logger } from '../logger';
@@ -8,6 +12,13 @@ import { SqliteDocStorage } from './doc';
 import { SqliteSyncStorage } from './sync';
 
 export class SqliteSpaceStorage extends SpaceStorage {
+  constructor(
+    options: SpaceStorageOptions,
+    private readonly id: string
+  ) {
+    super(options);
+  }
+
   get connection() {
     const docStore = this.get('doc');
 
@@ -29,13 +40,13 @@ export class SqliteSpaceStorage extends SpaceStorage {
   }
 
   async getWorkspaceName() {
-    const docStore = this.tryGet('doc');
+    const docStore = this.get('doc');
 
     if (!docStore) {
       return null;
     }
 
-    const doc = await docStore.getDoc(docStore.spaceId);
+    const doc = await docStore.getDoc(this.id);
     if (!doc) {
       return null;
     }
@@ -75,11 +86,14 @@ export async function ensureStorage(universalId: string) {
       id,
     };
 
-    store = new SqliteSpaceStorage([
-      new SqliteDocStorage(opts),
-      new SqliteBlobStorage(opts),
-      new SqliteSyncStorage(opts),
-    ]);
+    store = new SqliteSpaceStorage(
+      {
+        doc: new SqliteDocStorage(opts),
+        blob: new SqliteBlobStorage(opts),
+        sync: new SqliteSyncStorage(opts),
+      },
+      id
+    );
 
     store.connect();
 
