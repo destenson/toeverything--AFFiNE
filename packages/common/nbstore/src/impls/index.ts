@@ -12,6 +12,11 @@ import {
   IndexedDBSyncStorage,
 } from './idb';
 import { IndexedDBV1BlobStorage, IndexedDBV1DocStorage } from './idb/v1';
+import {
+  SqliteBlobStorage,
+  SqliteDocStorage,
+  SqliteSyncStorage,
+} from './sqlite';
 
 type StorageConstructor = {
   new (...args: any[]): Storage;
@@ -37,7 +42,18 @@ const cloud = [
   CloudAwarenessStorage,
 ] satisfies StorageConstructor[];
 
-const storages = [...cloud, ...idbv1, ...idb] satisfies StorageConstructor[];
+const sqlite = [
+  SqliteDocStorage,
+  SqliteBlobStorage,
+  SqliteSyncStorage,
+] satisfies StorageConstructor[];
+
+const storages = [
+  ...cloud,
+  ...idbv1,
+  ...idb,
+  ...sqlite,
+] satisfies StorageConstructor[];
 
 const AvailableStorageImplementations = storages.reduce((acc, curr) => {
   acc[curr.name] = curr;

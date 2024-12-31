@@ -3,6 +3,7 @@ import { type DocClock, DocStorageBase, type DocUpdate } from '../../storage';
 import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
 export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
+  static readonly identifier = 'SqliteDocStorage';
   override connection = share(new NativeDBConnection(this.options));
 
   get db() {

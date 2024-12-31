@@ -3,6 +3,8 @@ import { type BlobRecord, BlobStorageBase } from '../../storage';
 import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
 export class SqliteBlobStorage extends BlobStorageBase {
+  static readonly identifier = 'SqliteBlobStorage';
+
   override connection = share(new NativeDBConnection(this.options));
 
   constructor(private readonly options: SqliteNativeDBOptions) {
