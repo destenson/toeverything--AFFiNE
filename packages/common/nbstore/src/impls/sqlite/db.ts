@@ -17,71 +17,50 @@ export interface SqliteNativeDBOptions {
 
 type NativeDBApis = {
   connect: (id: string) => Promise<void>;
-
   close: (id: string) => Promise<void>;
-
   pushDocUpdate: (id: string, update: DocUpdate) => Promise<DocClock>;
-
   getDoc: (id: string, docId: string) => Promise<DocRecord | null>;
-
   deleteDoc: (id: string, docId: string) => Promise<void>;
-
   getDocTimestamps: (id: string, after?: Date) => Promise<DocClocks>;
-
   getDocTimestamp: (id: string, docId: string) => Promise<DocClock | null>;
-
   setBlob: (id: string, blob: BlobRecord) => Promise<void>;
-
   getBlob: (id: string, key: string) => Promise<BlobRecord | null>;
-
   deleteBlob: (id: string, key: string, permanently: boolean) => Promise<void>;
-
   listBlobs: (id: string) => Promise<ListedBlobRecord[]>;
-
   releaseBlobs: (id: string) => Promise<void>;
-
   getPeerRemoteClocks: (id: string, peer: string) => Promise<DocClocks>;
-
   getPeerRemoteClock: (
     id: string,
     peer: string,
     docId: string
   ) => Promise<DocClock | null>;
-
   setPeerRemoteClock: (
     id: string,
     peer: string,
     clock: DocClock
   ) => Promise<void>;
-
   getPeerPulledRemoteClocks: (id: string, peer: string) => Promise<DocClocks>;
-
   getPeerPulledRemoteClock: (
     id: string,
     peer: string,
     docId: string
   ) => Promise<DocClock | null>;
-
   setPeerPulledRemoteClock: (
     id: string,
     peer: string,
     clock: DocClock
   ) => Promise<void>;
-
   getPeerPushedClocks: (id: string, peer: string) => Promise<DocClocks>;
-
   getPeerPushedClock: (
     id: string,
     peer: string,
     docId: string
   ) => Promise<DocClock | null>;
-
   setPeerPushedClock: (
     id: string,
     peer: string,
     clock: DocClock
   ) => Promise<void>;
-
   clearClocks: (id: string) => Promise<void>;
 };
 
@@ -128,22 +107,23 @@ export class NativeDBConnection extends AutoReconnectConnection<void> {
       type: this.type,
       id: this.id,
     });
-    const wrapped = {} as any;
-    for (const key of Object.keys(originalApis)) {
-      const v = originalApis[key as keyof NativeDBApis];
-      if (typeof v !== 'function') {
-        wrapped[key] = v;
-      } else {
-        wrapped[key] = async (...args: any[]) => {
-          return (originalApis[key as keyof NativeDBApis] as any).call(
-            originalApis,
-            id,
-            ...args
-          );
-        };
+    return new Proxy(
+      {},
+      {
+        get: (_target, key: keyof NativeDBApisWrapper) => {
+          const v = originalApis[key];
+
+          return async (...args: any[]) => {
+            return v.call(
+              originalApis,
+              id,
+              // @ts-expect-error I don't know why it complains ts(2556)
+              ...args
+            );
+          };
+        },
       }
-    }
-    return wrapped as NativeDBApisWrapper;
+    ) as unknown as NativeDBApisWrapper;
   }
 
   override async doConnect() {

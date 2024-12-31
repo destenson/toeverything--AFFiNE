@@ -3,7 +3,6 @@ import { AsyncCall } from 'async-call-rpc';
 import type { RendererToHelper } from '../shared/type';
 import { events, handlers } from './exposed';
 import { logger } from './logger';
-
 function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
   const flattenedHandlers = Object.entries(handlers).flatMap(
     ([namespace, namespaceHandlers]) => {
