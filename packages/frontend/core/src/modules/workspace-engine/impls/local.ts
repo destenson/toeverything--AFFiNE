@@ -1,6 +1,10 @@
 import { DebugLogger } from '@affine/debug';
 import type { BlobStorage, DocStorage } from '@affine/nbstore';
-import { IndexedDBBlobStorage, IndexedDBDocStorage } from '@affine/nbstore/idb';
+import {
+  IndexedDBBlobStorage,
+  IndexedDBDocStorage,
+  IndexedDBSyncStorage,
+} from '@affine/nbstore/idb';
 import type { WorkerInitOptions } from '@affine/nbstore/worker/client';
 import { DocCollection } from '@blocksuite/affine/store';
 import type { FrameworkProvider } from '@toeverything/infra';
@@ -19,6 +23,11 @@ import {
   type WorkspaceProfileInfo,
 } from '../../workspace';
 import { getWorkspaceProfileWorker } from './out-worker';
+import {
+  SqliteBlobStorage,
+  SqliteDocStorage,
+  SqliteSyncStorage,
+} from '@affine/nbstore/sqlite';
 
 export const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY = 'affine-local-workspace';
 const LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY =
@@ -53,11 +62,23 @@ export function setLocalWorkspaceIds(
 class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   constructor(private readonly framework: FrameworkProvider) {}
 
-  peerId = 'local';
-  flavour = 'local';
-  notifyChannel = new BroadcastChannel(
+  readonly flavour = 'local';
+  readonly notifyChannel = new BroadcastChannel(
     LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
   );
+
+  DocStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteDocStorage
+      : IndexedDBDocStorage;
+  BlobStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteBlobStorage
+      : IndexedDBBlobStorage;
+  SyncStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteSyncStorage
+      : IndexedDBSyncStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     setLocalWorkspaceIds(ids => ids.filter(x => x !== id));
@@ -80,14 +101,14 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     const id = nanoid();
 
     // save the initial state to local storage, then sync to cloud
-    const docStorage = new IndexedDBDocStorage({
+    const docStorage = new this.DocStorageType({
       id: id,
       flavour: this.flavour,
       type: 'workspace',
     });
     docStorage.connection.connect();
     await docStorage.connection.waitForConnected();
-    const blobStorage = new IndexedDBBlobStorage({
+    const blobStorage = new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
       type: 'workspace',
@@ -189,7 +210,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   async getWorkspaceProfile(
     id: string
   ): Promise<WorkspaceProfileInfo | undefined> {
-    const docStorage = new IndexedDBDocStorage({
+    const docStorage = new this.DocStorageType({
       id: id,
       flavour: this.flavour,
       type: 'workspace',
@@ -219,7 +240,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
-    const blob = await new IndexedDBBlobStorage({
+    const blob = await new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
       type: 'workspace',
@@ -231,7 +252,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return {
       local: {
         doc: {
-          name: 'IndexedDBDocStorage',
+          name: this.DocStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',
@@ -239,7 +260,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         blob: {
-          name: 'IndexedDBBlobStorage',
+          name: this.BlobStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',
@@ -247,7 +268,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         sync: {
-          name: 'IndexedDBSyncStorage',
+          name: this.SyncStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',

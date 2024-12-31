@@ -29,7 +29,10 @@ import {
   configureDesktopWorkbenchModule,
   WorkbenchService,
 } from '@affine/core/modules/workbench';
-import { WorkspacesService } from '@affine/core/modules/workspace';
+import {
+  WorkspaceEngineWorkerProvider,
+  WorkspacesService,
+} from '@affine/core/modules/workspace';
 import {
   configureBrowserWorkspaceFlavours,
   configureSqliteWorkspaceEngineStorageProvider,
@@ -42,6 +45,9 @@ import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { DesktopThemeSync } from './theme-sync';
+import { connectWebWorker } from '@affine/electron-api/web-worker';
+import { OpClient } from '@toeverything/infra/op';
+import { WorkerClient } from '@affine/nbstore/worker/client';
 
 const desktopWhiteList = [
   '/open-app/signin-redirect',
@@ -78,7 +84,25 @@ configureAppTabsHeaderModule(framework);
 configureFindInPageModule(framework);
 configureDesktopApiModule(framework);
 configureSpellCheckSettingModule(framework);
-
+framework.impl(WorkspaceEngineWorkerProvider, {
+  openWorker(options) {
+    const worker = new Worker(
+      new URL(
+        /* webpackChunkName: "nbstore-worker" */ './worker.ts',
+        import.meta.url
+      )
+    );
+    const electronApiCleanup = connectWebWorker(worker);
+    const client = new WorkerClient(new OpClient(worker), options);
+    return {
+      client,
+      dispose: () => {
+        worker.terminate();
+        electronApiCleanup();
+      },
+    };
+  },
+});
 framework.impl(PopupWindowProvider, p => {
   const apis = p.get(DesktopApiService).api;
   return {

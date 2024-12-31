@@ -7,7 +7,11 @@ import {
 } from '@affine/graphql';
 import type { BlobStorage, DocStorage } from '@affine/nbstore';
 import { CloudBlobStorage, StaticCloudDocStorage } from '@affine/nbstore/cloud';
-import { IndexedDBBlobStorage, IndexedDBDocStorage } from '@affine/nbstore/idb';
+import {
+  IndexedDBBlobStorage,
+  IndexedDBDocStorage,
+  IndexedDBSyncStorage,
+} from '@affine/nbstore/idb';
 import type { WorkerInitOptions } from '@affine/nbstore/worker/client';
 import { DocCollection } from '@blocksuite/affine/store';
 import {
@@ -43,6 +47,11 @@ import {
   type WorkspaceProfileInfo,
 } from '../../workspace';
 import { getWorkspaceProfileWorker } from './out-worker';
+import {
+  SqliteBlobStorage,
+  SqliteDocStorage,
+  SqliteSyncStorage,
+} from '@affine/nbstore/sqlite';
 
 const getCloudWorkspaceCacheKey = (serverId: string) => {
   if (serverId === 'affine-cloud') {
@@ -74,6 +83,19 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
   readonly flavour = this.server.id;
 
+  DocStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteDocStorage
+      : IndexedDBDocStorage;
+  BlobStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteBlobStorage
+      : IndexedDBBlobStorage;
+  SyncStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteSyncStorage
+      : IndexedDBSyncStorage;
+
   async deleteWorkspace(id: string): Promise<void> {
     await this.graphqlService.gql({
       query: deleteWorkspaceMutation,
@@ -100,14 +122,14 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     });
 
     // save the initial state to local storage, then sync to cloud
-    const blobStorage = new IndexedDBBlobStorage({
+    const blobStorage = new this.BlobStorageType({
       id: workspaceId,
       flavour: this.flavour,
       type: 'workspace',
     });
     blobStorage.connection.connect();
     await blobStorage.connection.waitForConnected();
-    const docStorage = new IndexedDBDocStorage({
+    const docStorage = new this.DocStorageType({
       id: workspaceId,
       flavour: this.flavour,
       type: 'workspace',
@@ -260,7 +282,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       id: id,
       serverBaseUrl: this.server.serverMetadata.baseUrl,
     });
-    const docStorage = new IndexedDBDocStorage({
+    const docStorage = new this.DocStorageType({
       id: id,
       flavour: this.flavour,
       type: 'workspace',
@@ -297,7 +319,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     };
   }
   async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
-    const localBlob = await new IndexedDBBlobStorage({
+    const localBlob = await new this.BlobStorageType({
       id,
       flavour: this.flavour,
       type: 'workspace',
@@ -336,7 +358,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return {
       local: {
         doc: {
-          name: 'IndexedDBDocStorage',
+          name: this.DocStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',
@@ -344,7 +366,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         blob: {
-          name: 'IndexedDBBlobStorage',
+          name: this.BlobStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',
@@ -352,7 +374,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         sync: {
-          name: 'IndexedDBSyncStorage',
+          name: this.SyncStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',

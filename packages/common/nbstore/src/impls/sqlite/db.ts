@@ -10,7 +10,7 @@ import type {
 import { type SpaceType, universalId } from '../../utils/universal-id';
 
 export interface SqliteNativeDBOptions {
-  readonly peer: string;
+  readonly flavour: string;
   readonly type: SpaceType;
   readonly id: string;
 }
@@ -28,7 +28,7 @@ type NativeDBApis = {
 
   getDocTimestamps: (id: string, after?: Date) => Promise<DocClocks>;
 
-  getDocTimestamp: (id: string, docId: string) => Promise<DocClock>;
+  getDocTimestamp: (id: string, docId: string) => Promise<DocClock | null>;
 
   setBlob: (id: string, blob: BlobRecord) => Promise<void>;
 
@@ -66,7 +66,7 @@ type NativeDBApis = {
     id: string,
     peer: string,
     clock: DocClock
-  ) => Promise<DocClock | null>;
+  ) => Promise<void>;
 
   getPeerPushedClocks: (id: string, peer: string) => Promise<DocClocks>;
 
@@ -97,18 +97,14 @@ type NativeDBApisWrapper = NativeDBApis extends infer APIs
 
 let apis: NativeDBApis | null = null;
 
-export function bindApis(apis: NativeDBApis) {
-  return new Proxy(apis, {
-    get: (target, key: keyof NativeDBApis) => {
-      return target[key];
-    },
-  });
+export function bindNativeDBApis(a: NativeDBApis) {
+  apis = a;
 }
 
 export class NativeDBConnection extends AutoReconnectConnection<void> {
   readonly apis: NativeDBApisWrapper;
 
-  readonly peer = this.options.peer;
+  readonly flavour = this.options.flavour;
   readonly type = this.options.type;
   readonly id = this.options.id;
 
@@ -123,32 +119,31 @@ export class NativeDBConnection extends AutoReconnectConnection<void> {
   }
 
   override get shareId(): string {
-    return `sqlite:${this.peer}:${this.type}:${this.id}`;
+    return `sqlite:${this.flavour}:${this.type}:${this.id}`;
   }
 
   warpApis(originalApis: NativeDBApis): NativeDBApisWrapper {
     const id = universalId({
-      peer: this.peer,
+      peer: this.flavour,
       type: this.type,
       id: this.id,
     });
-    return new Proxy(originalApis, {
-      get: (target, key: keyof NativeDBApisWrapper) => {
-        const v = target[key];
-        if (typeof v !== 'function') {
-          return v;
-        }
-
-        return async (...args: any[]) => {
-          return v.call(
+    const wrapped = {} as any;
+    for (const key of Object.keys(originalApis)) {
+      const v = originalApis[key as keyof NativeDBApis];
+      if (typeof v !== 'function') {
+        wrapped[key] = v;
+      } else {
+        wrapped[key] = async (...args: any[]) => {
+          return (originalApis[key as keyof NativeDBApis] as any).call(
             originalApis,
             id,
-            // @ts-expect-error I don't know why it complains ts(2556)
             ...args
           );
         };
-      },
-    }) as unknown as NativeDBApisWrapper;
+      }
+    }
+    return wrapped as NativeDBApisWrapper;
   }
 
   override async doConnect() {
